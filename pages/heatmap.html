@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Operations Heatmap — NovaCart AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .heatmap-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .heatmap-map { height: 480px; background: #0b1120; border-radius: var(--radius-xl); border: 1px solid var(--surface-border); position: relative; overflow: hidden; }
+    .store-hotspot { position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; cursor: pointer; transition: all 0.3s; transform: translate(-50%, -50%); }
+    .hotspot-critical { background: rgba(239,68,68,0.3); border: 2px solid var(--nova-red); color: white; box-shadow: 0 0 25px rgba(239,68,68,0.5); }
+    .hotspot-warning { background: rgba(245,158,11,0.3); border: 2px solid var(--nova-yellow); color: white; box-shadow: 0 0 20px rgba(245,158,11,0.4); }
+    .hotspot-normal { background: rgba(16,185,129,0.2); border: 2px solid var(--nova-green); color: white; box-shadow: 0 0 15px rgba(16,185,129,0.3); }
+    .zone-card { background: var(--surface-100); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 12px; }
+    @media (max-width: 1000px) { .heatmap-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body class="admin-layout">
+
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-content" id="main-content">
+    <div class="topbar" id="topbar"></div>
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-inner">
+          <div>
+            <div class="page-title">🔥 Operations Heatmap</div>
+            <div class="page-subtitle">Geographic distribution of cancellation risk, rider bottlenecks, and delivery delay zones.</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-primary btn-md" onclick="refreshHeatmap()">🔄 Refresh Live Data</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="heatmap-grid">
+        <!-- MAP CANVAS -->
+        <div class="heatmap-map">
+          <svg width="100%" height="100%">
+            <defs>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+            
+            <!-- Heat Glows -->
+            <circle cx="50%" cy="40%" r="120" fill="rgba(239,68,68,0.15)" filter="blur(20px)" />
+            <circle cx="75%" cy="50%" r="90" fill="rgba(245,158,11,0.12)" filter="blur(20px)" />
+            <circle cx="30%" cy="65%" r="100" fill="rgba(16,185,129,0.1)" filter="blur(20px)" />
+
+            <!-- Connecting Dispatch Lines -->
+            <path d="M 50% 40% L 30% 65%" stroke="rgba(59,130,246,0.3)" stroke-width="2" stroke-dasharray="6 4" />
+            <path d="M 50% 40% L 75% 50%" stroke="rgba(239,68,68,0.4)" stroke-width="2" stroke-dasharray="6 4" />
+          </svg>
+
+          <!-- Store Hotspots Overlay -->
+          <div class="store-hotspot hotspot-critical" style="left:50%; top:40%; width:70px; height:70px;" onclick="selectStore('S102')">
+            S102<br/><span style="font-size:0.65rem">11.3%</span>
+          </div>
+          <div class="store-hotspot hotspot-warning" style="left:75%; top:50%; width:60px; height:60px;" onclick="selectStore('S103')">
+            S103<br/><span style="font-size:0.65rem">7.8%</span>
+          </div>
+          <div class="store-hotspot hotspot-normal" style="left:30%; top:65%; width:50px; height:50px;" onclick="selectStore('S101')">
+            S101<br/><span style="font-size:0.65rem">6.2%</span>
+          </div>
+          <div class="store-hotspot hotspot-normal" style="left:40%; top:80%; width:50px; height:50px;" onclick="selectStore('S104')">
+            S104<br/><span style="font-size:0.65rem">5.1%</span>
+          </div>
+          <div class="store-hotspot hotspot-normal" style="left:20%; top:25%; width:50px; height:50px;" onclick="selectStore('S105')">
+            S105<br/><span style="font-size:0.65rem">3.9%</span>
+          </div>
+
+          <div style="position:absolute; top:16px; left:16px; background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); padding:10px 16px; border-radius:10px; border:1px solid var(--surface-border);">
+            <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">HEATMAP LEGEND</div>
+            <div style="display:flex; gap:12px; font-size:0.72rem; margin-top:6px;">
+              <span>🔴 High Cancel (>10%)</span>
+              <span>🟠 Medium Delay (6-10%)</span>
+              <span>🟢 Normal (<6%)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ZONE DETAILS SIDE PANEL -->
+        <div>
+          <div class="section-panel mb-16">
+            <div class="section-panel-header">
+              <div class="section-panel-title"><span>📍</span> Store Zone Breakdown</div>
+            </div>
+            <div class="section-panel-body" id="zone-list">
+              <!-- JS Populated -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/ai-engine.js"></script>
+  <script src="../js/demo.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      NOVA_SHELL.init('Operations Heatmap', 'Real-time geographic delay zones & store risk density');
+      renderZones();
+    });
+
+    function renderZones() {
+      const container = document.getElementById('zone-list');
+      const stores = window.NOVACART_DATA.stores;
+      container.innerHTML = stores.map(s => `
+        <div class="zone-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <strong style="font-size:0.9rem">${s.name}</strong>
+            <span class="badge ${s.status === 'CRITICAL' ? 'badge-red' : s.status === 'WARNING' ? 'badge-orange' : 'badge-green'}">${s.status}</span>
+          </div>
+          <div style="font-size:0.78rem; color:var(--text-muted); display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+            <div>Active Orders: <strong>${s.activeOrders}</strong></div>
+            <div>Avg Delivery: <strong>${s.avgDelivery}m</strong></div>
+            <div>Cancel Rate: <strong style="color:${s.cancellationRate > 10 ? 'var(--nova-red)' : 'inherit'}">${s.cancellationRate}%</strong></div>
+            <div>Active Drivers: <strong>${s.drivers}</strong></div>
+          </div>
+          ${s.bottleneck !== 'None' ? `<div style="font-size:0.75rem; color:var(--nova-orange); margin-top:8px;">⚠️ Bottleneck: ${s.bottleneck}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function refreshHeatmap() {
+      NOVA_UI.showToast('Heatmap data refreshed with live GPS telemetry', 'info');
+      renderZones();
+    }
+
+    function selectStore(id) {
+      const store = window.NOVACART_DATA.stores.find(s => s.id === id);
+      if (store) {
+        NOVA_UI.showToast(`Selected ${store.name} — Cancellation Rate: ${store.cancellationRate}%`, 'info');
+      }
+    }
+  </script>
+</body>
+</html>

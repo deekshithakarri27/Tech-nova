@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Reorder AI — NovaCart AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .reorder-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .customer-card { background: var(--surface-100); border: 1px solid var(--surface-border); border-radius: var(--radius-xl); padding: 18px; transition: all 0.2s; position: relative; }
+    .customer-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--surface-border-hover); }
+    .customer-card.due-now::before { content: ''; position: absolute; top: 0; right: 0; left: 0; height: 2px; background: var(--status-critical); border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+    .customer-card.due-soon::before { content: ''; position: absolute; top: 0; right: 0; left: 0; height: 2px; background: var(--status-high); border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+    .customer-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .customer-name { font-weight: 700; font-size: 0.9rem; }
+    .customer-id { font-size: 0.72rem; color: var(--text-muted); font-family: monospace; }
+    .items-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+    .item-chip { background: var(--surface-300); border-radius: 100px; padding: 4px 10px; font-size: 0.75rem; color: var(--text-secondary); }
+    .prob-bar { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+    .prob-label { font-size: 0.75rem; color: var(--text-muted); min-width: 120px; }
+    .bundle-card { background: linear-gradient(135deg, rgba(59,130,246,0.06), rgba(139,92,246,0.06)); border: 1px solid rgba(139,92,246,0.2); border-radius: var(--radius-xl); padding: 24px; }
+    .bundle-item { display: flex; align-items: center; gap: 12px; background: var(--surface-200); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+    .bundle-item-icon { font-size: 1.5rem; }
+    .bundle-item-info { flex: 1; }
+    .bundle-item-name { font-weight: 600; font-size: 0.9rem; }
+    .bundle-item-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    .bundle-item-price { font-weight: 700; color: var(--nova-green); }
+    .substitute-card { background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: var(--radius-lg); padding: 16px; margin-top: 12px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .prob-score { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; }
+    @media (max-width: 900px) { .reorder-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body class="admin-layout">
+
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-content" id="main-content">
+    <div class="topbar" id="topbar"></div>
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-inner">
+          <div>
+            <div class="page-title">🔄 Smart Reorder AI</div>
+            <div class="page-subtitle">Analyze purchase patterns, predict reorder windows, and generate personalized bundles.</div>
+          </div>
+          <div class="disclaimer-badge">⚠ PROTOTYPE SIMULATION DATA</div>
+        </div>
+      </div>
+
+      <!-- SUMMARY KPIS -->
+      <div class="grid-4 mb-20">
+        <div class="kpi-card" style="--accent-color:#ef4444">
+          <div class="kpi-label">🔴 Due Now</div>
+          <div class="kpi-value" style="color:#ef4444" id="kpi-due-now">0</div>
+          <div class="kpi-change kpi-down">Past reorder window</div>
+        </div>
+        <div class="kpi-card" style="--accent-color:#f97316">
+          <div class="kpi-label">🟠 Due Soon</div>
+          <div class="kpi-value" style="color:#f97316" id="kpi-due-soon">0</div>
+          <div class="kpi-change kpi-neutral">Next 2 days</div>
+        </div>
+        <div class="kpi-card" style="--accent-color:#22c55e">
+          <div class="kpi-label">💰 Potential Revenue</div>
+          <div class="kpi-value" style="color:#22c55e">₹23.6k</div>
+          <div class="kpi-change kpi-up">At 38% conversion</div>
+        </div>
+        <div class="kpi-card" style="--accent-color:#8b5cf6">
+          <div class="kpi-label">🛒 Bundles Generated</div>
+          <div class="kpi-value" style="color:#8b5cf6">5</div>
+          <div class="kpi-change kpi-up">Ready to launch</div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="tab-bar mb-20">
+        <button class="tab-btn active" onclick="switchTab('customers', this)">👥 Customer List</button>
+        <button class="tab-btn" onclick="switchTab('bundles', this)">🎁 Bundles</button>
+        <button class="tab-btn" onclick="switchTab('substitutions', this)">🔄 Smart Substitutions</button>
+        <button class="tab-btn" onclick="switchTab('campaigns', this)">📢 Campaigns</button>
+      </div>
+
+      <!-- TAB: CUSTOMERS -->
+      <div id="tab-customers" class="tab-content active">
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <input type="text" placeholder="Search customers..." class="text-input" style="flex:1;min-width:200px" oninput="searchCustomers(this.value)" id="customer-search" />
+          <select class="select-input" onchange="filterCustomers(this.value)">
+            <option value="">All Status</option>
+            <option value="DUE_NOW">Due Now</option>
+            <option value="DUE_SOON">Due Soon</option>
+            <option value="UPCOMING">Upcoming</option>
+          </select>
+          <button class="btn-primary btn-md" onclick="launchCampaign()">📢 Launch Reorder Campaign</button>
+        </div>
+        <div class="reorder-grid" id="customer-grid"></div>
+        <div style="text-align:center;margin-top:20px">
+          <button class="btn-ghost btn-md" id="load-more-btn" onclick="loadMoreCustomers()">Load More Customers</button>
+        </div>
+      </div>
+
+      <!-- TAB: BUNDLES -->
+      <div id="tab-bundles" class="tab-content">
+        <div class="reorder-grid" id="bundles-grid"></div>
+      </div>
+
+      <!-- TAB: SUBSTITUTIONS -->
+      <div id="tab-substitutions" class="tab-content">
+        <div class="section-panel">
+          <div class="section-panel-header">
+            <div class="section-panel-title">🔄 Smart Substitutions (Connected with Phantom Stock AI)</div>
+          </div>
+          <div class="section-panel-body" id="substitutions-list"></div>
+        </div>
+      </div>
+
+      <!-- TAB: CAMPAIGNS -->
+      <div id="tab-campaigns" class="tab-content">
+        <div id="campaigns-list"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/ai-engine.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/shell.js"></script>
+  <script src="../js/demo.js"></script>
+  <script>
+    NOVA_SHELL.init('Smart Reorder AI', 'Predict reorder windows · Personalized bundles · Smart substitutions');
+    const D = window.NOVACART_DATA;
+    const AI = window.NOVACART_AI;
+    const UI = window.NOVA_UI;
+
+    let displayedCustomers = 12;
+    let filteredCustomers = [...D.customers];
+
+    // KPI init
+    function updateKPIs() {
+      const dueNow = D.customers.filter(c=>c.status==='DUE_NOW').length;
+      const dueSoon = D.customers.filter(c=>c.status==='DUE_SOON').length;
+      UI.animateNumber(document.getElementById('kpi-due-now'), 0, dueNow, 800);
+      UI.animateNumber(document.getElementById('kpi-due-soon'), 0, dueSoon, 900);
+    }
+
+    // TABS
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.getElementById('tab-'+tabId)?.classList.add('active');
+      btn?.classList.add('active');
+      if (tabId==='bundles') renderBundles();
+      if (tabId==='substitutions') renderSubstitutions();
+      if (tabId==='campaigns') renderCampaigns();
+    }
+
+    // CUSTOMER GRID
+    function renderCustomers(customers) {
+      const shown = customers.slice(0, displayedCustomers);
+      const statusColors = { DUE_NOW: '#ef4444', DUE_SOON: '#f97316', UPCOMING: '#22c55e' };
+      document.getElementById('customer-grid').innerHTML = shown.map(c => {
+        const bundle = AI.getReorderBundle(c);
+        const prob = AI.scoreReorderProbability(c);
+        return `<div class="customer-card ${c.status==='DUE_NOW'?'due-now':c.status==='DUE_SOON'?'due-soon':''}">
+          <div class="customer-header">
+            <div>
+              <div class="customer-name">${c.name}</div>
+              <div class="customer-id">${c.id}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+              <span class="badge ${UI.getRiskBadgeClass(c.status==='DUE_NOW'?'CRITICAL':c.status==='DUE_SOON'?'HIGH':'LOW')}">${c.status.replace('_',' ')}</span>
+            </div>
+          </div>
+
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">📅 Last purchase: ${c.lastPurchaseDaysAgo}d ago · Next due: ${c.nextDueDays <= 0 ? '<strong style="color:#ef4444">NOW</strong>' : c.nextDueDays+'d'} · ${c.frequency}x/month</div>
+
+          <div class="items-row">
+            ${c.items.map(item=>`<span class="item-chip">${item}</span>`).join('')}
+          </div>
+
+          <div class="prob-bar">
+            <span class="prob-label">Reorder Probability</span>
+            <div class="risk-bar-container" style="flex:1">
+              <div class="risk-bar-fill ${prob.score>75?'risk-critical':prob.score>50?'risk-medium':'risk-low'}" style="width:${prob.score}%"></div>
+            </div>
+            <span class="prob-score" style="color:${prob.score>75?'#ef4444':prob.score>50?'#eab308':'#22c55e'}">${prob.score}%</span>
+          </div>
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+            <button class="btn-primary btn-sm" onclick="reorderAll('${c.id}')">🛒 Reorder All</button>
+            <button class="btn-ghost btn-sm" onclick="adjustBundle('${c.id}')">✏ Adjust</button>
+            <button class="btn-ghost btn-sm" onclick="sendReorderMsg('${c.id}')">💬 Notify</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function searchCustomers(query) {
+      filteredCustomers = D.customers.filter(c =>
+        !query || c.name.toLowerCase().includes(query.toLowerCase()) || c.id.toLowerCase().includes(query.toLowerCase())
+      );
+      displayedCustomers = 12;
+      renderCustomers(filteredCustomers);
+    }
+
+    function filterCustomers(status) {
+      filteredCustomers = !status ? [...D.customers] : D.customers.filter(c=>c.status===status);
+      displayedCustomers = 12;
+      renderCustomers(filteredCustomers);
+    }
+
+    function loadMoreCustomers() {
+      displayedCustomers += 12;
+      renderCustomers(filteredCustomers);
+    }
+
+    function reorderAll(customerId) {
+      const c = D.customers.find(c=>c.id===customerId);
+      if (!c) return;
+      c.notified = true;
+      c.status = 'UPCOMING';
+      renderCustomers(filteredCustomers);
+      UI.showToast(`🛒 Reorder triggered for ${c.name} — Breakfast Essentials bundle queued`, 'success');
+    }
+
+    function sendReorderMsg(customerId) {
+      const c = D.customers.find(c=>c.id===customerId);
+      if (!c) return;
+      const bundle = AI.getReorderBundle(c);
+      UI.showModal('Reorder Notification (Simulated)', `
+        <div class="customer-msg" style="background:linear-gradient(135deg,rgba(59,130,246,0.08),rgba(139,92,246,0.08));border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:18px">
+          <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--nova-blue-light);margin-bottom:8px">📱 In-App Notification Preview</div>
+          <div style="font-size:1.1rem;font-weight:700;margin-bottom:6px">YOUR USUALS ARE WAITING 🛒</div>
+          <div style="font-size:0.9rem;color:var(--text-secondary)">${bundle.message}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">${bundle.items.map(i=>`<span class="item-chip">${i}</span>`).join('')}</div>
+        </div>
+        <div style="margin-top:12px;font-size:0.75rem;color:var(--text-muted);background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:10px">⚠ This is a simulated notification preview. Not actually sent.</div>
+      `, [
+        { label: '📤 Send Notification (Simulated)', class:'btn-primary btn-md', onClick: () => { c.notified=true; UI.showToast('Notification sent (simulated)', 'success'); } },
+        { label: 'Cancel', class:'btn-ghost btn-md' },
+      ]);
+    }
+
+    function adjustBundle(customerId) { UI.showToast('Bundle adjustment panel coming in full version', 'info'); }
+
+    // BUNDLES
+    const bundleTemplates = [
+      { name: 'Breakfast Essentials', icon: '🍳', items: [
+        { name: 'Milk 500ml', icon: '🥛', price: 28, freq: '3x/month', lastBought: '8d ago', prob: 82 },
+        { name: 'Whole Wheat Bread', icon: '🍞', price: 45, freq: '3x/month', lastBought: '8d ago', prob: 79 },
+        { name: 'Eggs (Tray of 6)', icon: '🥚', price: 48, freq: '3x/month', lastBought: '8d ago', prob: 81 },
+      ], total: 121, customers: 47, color: '#f59e0b' },
+      { name: 'Kitchen Staples', icon: '🍚', items: [
+        { name: 'Basmati Rice 1kg', icon: '🌾', price: 89, freq: '2x/month', lastBought: '12d ago', prob: 74 },
+        { name: 'Dal 500g', icon: '🫘', price: 52, freq: '2x/month', lastBought: '12d ago', prob: 71 },
+        { name: 'Cooking Oil 1L', icon: '🍶', price: 145, freq: '1x/month', lastBought: '25d ago', prob: 68 },
+      ], total: 286, customers: 31, color: '#22c55e' },
+      { name: 'Dairy Bundle', icon: '🥛', items: [
+        { name: 'Milk 500ml', icon: '🥛', price: 28, freq: '3x/month', lastBought: '6d ago', prob: 85 },
+        { name: 'Curd 400g', icon: '🥗', price: 38, freq: '3x/month', lastBought: '6d ago', prob: 78 },
+        { name: 'Paneer 200g', icon: '🧀', price: 72, freq: '2x/month', lastBought: '10d ago', prob: 71 },
+      ], total: 138, customers: 29, color: '#3b82f6' },
+    ];
+
+    function renderBundles() {
+      document.getElementById('bundles-grid').innerHTML = bundleTemplates.map((b, i) => `
+        <div class="bundle-card" style="border-color:${b.color}44">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div>
+              <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">BUNDLE ${i+1}</div>
+              <h3 style="font-size:1.1rem;font-weight:700">${b.icon} ${b.name}</h3>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:1.3rem;font-weight:800;color:var(--nova-green)">₹${b.total}</div>
+              <div style="font-size:0.72rem;color:var(--text-muted)">${b.customers} customers eligible</div>
+            </div>
+          </div>
+
+          ${b.items.map(item => `<div class="bundle-item">
+            <span class="bundle-item-icon">${item.icon}</span>
+            <div class="bundle-item-info">
+              <div class="bundle-item-name">${item.name}</div>
+              <div class="bundle-item-meta">Bought ${item.freq} · Last: ${item.lastBought} · Reorder prob: ${item.prob}%</div>
+            </div>
+            <div class="bundle-item-price">₹${item.price}</div>
+          </div>`).join('')}
+
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+            <button class="btn-primary btn-md" onclick="launchBundleCampaign('${b.name}', ${b.customers})">📢 Launch Campaign</button>
+            <button class="btn-ghost btn-md" onclick="editBundle(${i})">✏ Edit Bundle</button>
+          </div>
+        </div>`).join('');
+    }
+
+    function launchBundleCampaign(name, count) {
+      UI.showToast(`📢 "${name}" campaign launched for ${count} customers (simulated)`, 'success');
+    }
+    function editBundle(i) { UI.showToast('Bundle editor in full version', 'info'); }
+
+    // SUBSTITUTIONS
+    function renderSubstitutions() {
+      const phantomSKUs = D.products.filter(p=>p.substitute && (p.risk==='CRITICAL'||p.risk==='HIGH'));
+      document.getElementById('substitutions-list').innerHTML = `
+        <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px">When Phantom Stock AI detects a product is unreliable, Smart Reorder AI automatically suggests substitutes.</p>
+        ${phantomSKUs.map(p => {
+          const sub = D.products.find(s=>s.id===p.substitute);
+          return `<div class="substitute-card">
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+              <div style="flex:1">
+                <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:#ef4444;margin-bottom:4px">⚠ UNAVAILABLE / HIGH RISK</div>
+                <div style="font-weight:700">${p.name}</div>
+                <div style="font-size:0.78rem;color:var(--text-muted)">${p.cancellationRate}% cancel rate · ${p.risk} risk · ${p.storeId}</div>
+              </div>
+              <div style="font-size:1.5rem;color:var(--text-muted)">→</div>
+              ${sub ? `<div style="flex:1;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:12px">
+                <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:#22c55e;margin-bottom:4px">✅ RECOMMENDED SUBSTITUTE</div>
+                <div style="font-weight:700">${sub.name}</div>
+                <div style="font-size:0.78rem;color:var(--text-muted)">${sub.cancellationRate}% cancel rate · ${sub.risk} risk · ₹${sub.price}</div>
+                <div style="margin-top:8px;display:flex;gap:6px">
+                  <button class="btn-success btn-sm" onclick="NOVA_UI.showToast('Substitute activated for ${p.name}','success')">✅ Activate Substitute</button>
+                </div>
+              </div>` : '<div style="color:var(--text-muted);font-size:0.85rem">No substitute found</div>'}
+            </div>
+          </div>`;
+        }).join('')}
+      `;
+    }
+
+    // CAMPAIGNS
+    function renderCampaigns() {
+      document.getElementById('campaigns-list').innerHTML = `
+        <div class="section-panel mb-16">
+          <div class="section-panel-header">
+            <div class="section-panel-title">📢 Launch New Campaign</div>
+          </div>
+          <div class="section-panel-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+              <div><label class="form-label">Segment</label>
+                <select class="select-input" style="width:100%">
+                  <option>Due Now (${D.customers.filter(c=>c.status==='DUE_NOW').length} customers)</option>
+                  <option>Due Soon (${D.customers.filter(c=>c.status==='DUE_SOON').length} customers)</option>
+                  <option>All 127 customers</option>
+                </select>
+              </div>
+              <div><label class="form-label">Bundle</label>
+                <select class="select-input" style="width:100%">
+                  ${bundleTemplates.map(b=>`<option>${b.name}</option>`).join('')}
+                </select>
+              </div>
+              <div><label class="form-label">Channel (simulated)</label>
+                <select class="select-input" style="width:100%">
+                  <option>In-App Notification</option>
+                  <option>Push Notification</option>
+                  <option>WhatsApp (requires API)</option>
+                </select>
+              </div>
+            </div>
+            <div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:10px;font-size:0.78rem;color:#fbbf24;margin-bottom:14px">
+              ⚠ Campaign notifications are simulated in this prototype. WhatsApp requires a real messaging API connection.
+            </div>
+            <button class="btn-primary btn-md" onclick="launchCampaign()">📢 Launch Campaign (Simulated)</button>
+          </div>
+        </div>
+        <div class="section-panel">
+          <div class="section-panel-header">
+            <div class="section-panel-title">📋 Recent Campaigns</div>
+          </div>
+          <div class="section-panel-body">
+            <div style="text-align:center;padding:30px;color:var(--text-muted)">
+              <div style="font-size:2rem;margin-bottom:8px">📢</div>
+              <p>No campaigns launched yet. Use the form above to launch your first campaign.</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function launchCampaign() {
+      const dueNow = D.customers.filter(c=>c.status==='DUE_NOW').length;
+      UI.confirm(`Launch "Breakfast Essentials" reorder campaign for ${dueNow} customers? (Simulated — notifications will not actually be sent)`, () => {
+        D.state.kpis.customersRecovered += Math.round(dueNow * 0.38);
+        D.state.kpis.revenueRecovered += Math.round(dueNow * 0.38 * 186);
+        UI.showToast(`📢 Campaign launched for ${dueNow} customers (simulated). Est. ${Math.round(dueNow*0.38)} conversions.`, 'success', 5000);
+      });
+    }
+
+    updateKPIs();
+    renderCustomers(filteredCustomers);
+  </script>
+</body>
+</html>

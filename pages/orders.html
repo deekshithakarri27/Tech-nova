@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orders — NovaCart AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body class="admin-layout">
+
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-content" id="main-content">
+    <div class="topbar" id="topbar"></div>
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-inner">
+          <div>
+            <div class="page-title">🛒 Live Orders Intelligence</div>
+            <div class="page-subtitle">Real-time order stream with AI cancellation risk scoring and automated delivery ETA correction.</div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-primary btn-md" onclick="rescueAllHighRisk()">🛡️ Rescue All High Risk Orders</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTER PANEL -->
+      <div class="section-panel mb-20">
+        <div class="section-panel-header">
+          <div class="section-panel-title"><span>🔍</span> Filter Orders</div>
+        </div>
+        <div class="section-panel-body">
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px;">
+            <div>
+              <label class="form-label">Order Status</label>
+              <select id="order-status" class="select-input" style="width:100%" onchange="renderOrders()">
+                <option value="">All Statuses</option>
+                <option value="ON_WAY">🚴 On The Way</option>
+                <option value="PREPARING">👨‍🍳 Preparing</option>
+                <option value="CONFIRMED">✅ Confirmed</option>
+                <option value="DELIVERED">📦 Delivered</option>
+                <option value="CANCELLED">❌ Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Delay Risk Level</label>
+              <select id="order-risk" class="select-input" style="width:100%" onchange="renderOrders()">
+                <option value="">All Risk Levels</option>
+                <option value="HIGH">🔴 High Risk (>70%)</option>
+                <option value="MEDIUM">🟡 Medium Risk (40-70%)</option>
+                <option value="LOW">🟢 Low Risk (<40%)</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Store</label>
+              <select id="order-store" class="select-input" style="width:100%" onchange="renderOrders()">
+                <option value="">All Stores</option>
+                <option value="S101">Store #101 Koramangala</option>
+                <option value="S102">Store #102 Indiranagar</option>
+                <option value="S103">Store #103 Whitefield</option>
+                <option value="S104">Store #104 HSR Layout</option>
+                <option value="S105">Store #105 Hebbal</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Search</label>
+              <input type="text" id="order-search" class="search-input" placeholder="Order ID or Customer..." oninput="renderOrders()" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ORDERS TABLE -->
+      <div class="section-panel">
+        <div class="section-panel-header">
+          <div class="section-panel-title"><span>📋</span> Active Orders (<span id="order-count">500</span>)</div>
+        </div>
+        <div class="section-panel-body" style="padding:0">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Store</th>
+                  <th>Rider</th>
+                  <th>Amount</th>
+                  <th>App ETA</th>
+                  <th>Honest ETA</th>
+                  <th>Delay Risk</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="orders-tbody">
+                <!-- JS Populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/ai-engine.js"></script>
+  <script src="../js/demo.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      NOVA_SHELL.init('Orders', 'Live order monitoring, delay prediction & automated customer rescue');
+      renderOrders();
+    });
+
+    function renderOrders() {
+      const tbody = document.getElementById('orders-tbody');
+      const status = document.getElementById('order-status').value;
+      const risk = document.getElementById('order-risk').value;
+      const store = document.getElementById('order-store').value;
+      const search = document.getElementById('order-search').value.toLowerCase();
+
+      let orders = window.NOVACART_DATA.orders;
+
+      if (status) orders = orders.filter(o => o.status === status);
+      if (risk) orders = orders.filter(o => o.riskLevel === risk);
+      if (store) orders = orders.filter(o => o.storeId === store);
+      if (search) orders = orders.filter(o => o.id.toLowerCase().includes(search) || o.customer.toLowerCase().includes(search));
+
+      document.getElementById('order-count').textContent = orders.length;
+
+      tbody.innerHTML = orders.slice(0, 35).map(o => `
+        <tr>
+          <td><code style="color:var(--nova-blue-light)">${o.id}</code></td>
+          <td><strong>${o.customer}</strong></td>
+          <td>${o.storeName.split('—')[1] || o.storeName}</td>
+          <td>${o.riderName}</td>
+          <td>₹${o.amount}</td>
+          <td>${o.promisedETA}m</td>
+          <td><strong style="color:var(--nova-purple-light)">${o.honestETA}m</strong></td>
+          <td>
+            <span class="badge ${o.riskLevel === 'HIGH' ? 'badge-red' : o.riskLevel === 'MEDIUM' ? 'badge-yellow' : 'badge-green'}">
+              ${o.delayRisk}% (${o.riskLevel})
+            </span>
+          </td>
+          <td>
+            <span class="badge ${o.status === 'CANCELLED' ? 'badge-red' : o.status === 'DELIVERED' ? 'badge-green' : 'badge-blue'}">
+              ${o.status}
+            </span>
+          </td>
+          <td>
+            ${o.rescued ? `<span style="color:var(--nova-green); font-size:0.75rem">✓ Rescued</span>` : `
+              <button class="btn-primary btn-sm" onclick="rescueOrder('${o.id}')">
+                🛡️ Rescue
+              </button>
+            `}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function rescueOrder(id) {
+      const order = window.NOVACART_DATA.orders.find(o => o.id === id);
+      if (order) {
+        order.rescued = true;
+        order.riskLevel = 'LOW';
+        NOVA_UI.showToast(`Order ${order.id} rescued! Proactive compensation SMS & updated ETA delivered to ${order.customer}.`, 'success');
+        renderOrders();
+      }
+    }
+
+    function rescueAllHighRisk() {
+      const highRisk = window.NOVACART_DATA.orders.filter(o => o.riskLevel === 'HIGH' && !o.rescued);
+      highRisk.forEach(o => { o.rescued = true; o.riskLevel = 'LOW'; });
+      NOVA_UI.showToast(`Batch rescued ${highRisk.length} high-risk orders!`, 'success');
+      renderOrders();
+    }
+  </script>
+</body>
+</html>

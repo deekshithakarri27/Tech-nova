@@ -1,0 +1,283 @@
+/* ===========================================
+   NOVACART AI — PEACEFUL DASHBOARD STYLES
+   =========================================== */
+
+/* INTRO BANNER */
+.dashboard-intro-banner {
+  background: var(--surface-100);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  padding: 22px 26px;
+  margin-bottom: 20px;
+}
+.intro-greeting-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--nova-blue-light);
+  margin-bottom: 4px;
+}
+.intro-greeting-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.priority-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+.priority-summary-card {
+  background: var(--bg-850);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all var(--transition-fast);
+}
+.priority-summary-card:hover {
+  border-color: var(--surface-border-hover);
+}
+.priority-card-num {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.priority-card-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+.priority-card-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* PRIMARY KPI METRICS (4 CARDS) */
+.primary-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.kpi-card-clean {
+  background: var(--surface-100);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  transition: all var(--transition-fast);
+}
+.kpi-card-clean:hover {
+  border-color: var(--surface-border-hover);
+}
+.kpi-card-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.kpi-card-num {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 4px 0;
+}
+.kpi-card-diff {
+  font-size: 0.73rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.diff-up { color: var(--status-success); }
+.diff-down { color: var(--status-critical); }
+
+/* SECONDARY COMPACT METRICS BAR */
+.secondary-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.compact-metric-item {
+  background: var(--surface-100);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.compact-metric-label { font-size: 0.75rem; color: var(--text-muted); }
+.compact-metric-val { font-family: var(--font-display); font-size: 0.92rem; font-weight: 600; color: var(--text-primary); }
+
+/* BUSINESS HEALTH DIMENSIONS SECTION */
+.business-health-panel {
+  background: var(--surface-100);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  padding: 22px;
+  margin-bottom: 20px;
+}
+.health-dimensions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+.health-dim-card {
+  background: var(--bg-850);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+}
+.health-dim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.health-dim-name { font-size: 0.78rem; font-weight: 500; color: var(--text-secondary); }
+.health-dim-pct { font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+
+.health-progress-bar {
+  height: 4px;
+  background: var(--surface-200);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.health-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--nova-blue);
+}
+.health-dim-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* AI PRIORITY ALERT CARDS */
+.alerts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.alert-action-card {
+  background: var(--surface-100);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: 95px 1.5fr 2fr 110px;
+  gap: 14px;
+  align-items: center;
+  transition: all var(--transition-fast);
+}
+.alert-action-card:hover {
+  border-color: var(--surface-border-hover);
+  background: var(--surface-200);
+}
+.alert-problem-title { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+.alert-problem-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
+.alert-evidence { font-size: 0.75rem; color: var(--text-secondary); }
+.alert-rec { font-size: 0.75rem; color: var(--nova-blue-light); }
+
+/* HERO FEATURE: AI RESCUE CENTER CO-PILOT CARD */
+.rescue-copilot-card {
+  background: var(--surface-100);
+  border: 1px solid var(--surface-border-hover);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.copilot-stats {
+  display: flex;
+  gap: 20px;
+}
+.copilot-stat-item {
+  text-align: center;
+}
+.copilot-stat-num {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.copilot-stat-lbl {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* HOW AI SEES NOVACART VISUAL FLOW */
+.ai-flow-panel {
+  background: var(--surface-100);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  padding: 22px;
+  margin-bottom: 20px;
+}
+.ai-flow-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+.ai-flow-node {
+  flex: 1;
+  background: var(--bg-850);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  text-align: center;
+}
+.ai-flow-node-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--nova-blue-light);
+  margin-bottom: 4px;
+}
+.ai-flow-node-items {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.ai-flow-connector {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+  .primary-kpi-grid, .secondary-kpi-row, .health-dimensions-grid { grid-template-columns: repeat(2, 1fr); }
+  .alert-action-card { grid-template-columns: 1fr; gap: 8px; }
+  .ai-flow-diagram { flex-direction: column; gap: 10px; }
+  .ai-flow-connector { transform: rotate(90deg); }
+}
+@media (max-width: 600px) {
+  .primary-kpi-grid, .secondary-kpi-row, .health-dimensions-grid, .priority-summary-grid { grid-template-columns: 1fr; }
+}

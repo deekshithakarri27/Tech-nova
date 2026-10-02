@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Impact Simulator — NovaCart AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .sim-grid { display: grid; grid-template-columns: 380px 1fr; gap: 24px; }
+    .slider-group { margin-bottom: 20px; }
+    .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .slider-label { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); }
+    .slider-value { font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--nova-blue-light); }
+    .metric-compare { background: var(--surface-100); border: 1px solid var(--surface-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 14px; }
+    .metric-header { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 12px; }
+    .metric-values { display: flex; align-items: center; gap: 16px; }
+    .metric-before { text-align: center; flex: 1; }
+    .metric-after { text-align: center; flex: 1; }
+    .metric-val { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; }
+    .metric-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
+    .metric-arrow { font-size: 1.5rem; color: var(--nova-green); }
+    .metric-change { font-size: 0.78rem; font-weight: 700; margin-top: 4px; }
+    .impact-hero { text-align: center; background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.08)); border: 1px solid rgba(139,92,246,0.2); border-radius: var(--radius-2xl); padding: 32px; margin-bottom: 24px; }
+    .impact-revenue { font-family: var(--font-display); font-size: 3rem; font-weight: 900; background: linear-gradient(135deg, var(--nova-blue), var(--nova-purple)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .bar-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end; height: 120px; }
+    .bar-col { display: flex; flex-direction: column; align-items: center; }
+    .bar-visual { width: 100%; border-radius: 6px 6px 0 0; transition: height 1s ease; min-height: 4px; }
+    .bar-before { background: rgba(239,68,68,0.4); border: 1px solid rgba(239,68,68,0.3); }
+    .bar-after { background: rgba(16,185,129,0.4); border: 1px solid rgba(16,185,129,0.3); }
+    .bar-label { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; text-align: center; }
+    @media (max-width: 1000px) { .sim-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body class="admin-layout">
+
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-content" id="main-content">
+    <div class="topbar" id="topbar"></div>
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-inner">
+          <div>
+            <div class="page-title">📈 Impact Simulator</div>
+            <div class="page-subtitle">Adjust intervention parameters and see simulated before/after business impact.</div>
+          </div>
+          <div class="disclaimer-badge">⚠ SIMULATED IMPACT — NOT REAL RESULTS</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:0.82rem;color:#fca5a5">
+        🚨 <strong>Important Disclaimer:</strong> All numbers shown below are SIMULATED estimates for demonstration purposes only. These are NOT real NovaCart business results. The Impact Simulator uses configurable parameters to model hypothetical outcomes.
+      </div>
+
+      <div class="sim-grid">
+
+        <!-- CONTROLS -->
+        <div class="section-panel" style="height:fit-content">
+          <div class="section-panel-header">
+            <div class="section-panel-title"><span>⚙️</span> Intervention Parameters</div>
+            <button class="btn-ghost btn-sm" onclick="resetSliders()">Reset</button>
+          </div>
+          <div class="section-panel-body">
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">Intervention Rate</span>
+                <span class="slider-value"><span id="val-intervention">65</span>%</span>
+              </div>
+              <input type="range" class="range-slider" id="sl-intervention" min="0" max="100" value="65" oninput="updateSim()" />
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">% of detected issues acted upon</div>
+            </div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">Phantom Stock Detection Accuracy</span>
+                <span class="slider-value"><span id="val-phantom">88</span>%</span>
+              </div>
+              <input type="range" class="range-slider" id="sl-phantom" min="50" max="100" value="88" oninput="updateSim()" />
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">How accurately phantom stock is detected</div>
+            </div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">ETA Prediction Accuracy</span>
+                <span class="slider-value"><span id="val-eta">91</span>%</span>
+              </div>
+              <input type="range" class="range-slider" id="sl-eta" min="60" max="100" value="91" oninput="updateSim()" />
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">Honest ETA accuracy vs actual delivery time</div>
+            </div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">Customer Recovery Rate</span>
+                <span class="slider-value"><span id="val-recovery">72</span>%</span>
+              </div>
+              <input type="range" class="range-slider" id="sl-recovery" min="20" max="100" value="72" oninput="updateSim()" />
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">% of at-risk customers retained via AI intervention</div>
+            </div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">Reorder Conversion Rate</span>
+                <span class="slider-value"><span id="val-reorder">38</span>%</span>
+              </div>
+              <input type="range" class="range-slider" id="sl-reorder" min="10" max="80" value="38" oninput="updateSim()" />
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">% of targeted customers who complete reorder</div>
+            </div>
+
+            <div class="divider"></div>
+            <div style="font-size:0.72rem;color:var(--text-muted);line-height:1.6;margin-top:4px">
+              ⚠ These parameters model hypothetical scenarios. Actual business results may differ significantly based on implementation, market conditions, and many other factors not captured in this simulation.
+            </div>
+          </div>
+        </div>
+
+        <!-- RESULTS -->
+        <div>
+          <!-- REVENUE HERO -->
+          <div class="impact-hero">
+            <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">SIMULATED POTENTIAL REVENUE RECOVERED</div>
+            <div class="impact-revenue" id="hero-revenue">₹18,400</div>
+            <div style="color:var(--text-muted);font-size:0.85rem;margin-top:4px" id="hero-subtitle">Based on current slider settings</div>
+            <div style="margin-top:16px;display:flex;gap:20px;justify-content:center;flex-wrap:wrap">
+              <div style="text-align:center">
+                <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--nova-green)" id="hero-orders">84</div>
+                <div style="font-size:0.72rem;color:var(--text-muted)">Orders Recovered</div>
+              </div>
+              <div style="text-align:center">
+                <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--nova-blue-light)" id="hero-customers">48</div>
+                <div style="font-size:0.72rem;color:var(--text-muted)">Customers Recovered</div>
+              </div>
+            </div>
+            <div class="disclaimer-badge" style="margin:12px auto 0;display:inline-flex">⚠ SIMULATED ESTIMATE — NOT REAL NOVACART RESULTS</div>
+          </div>
+
+          <!-- METRIC COMPARISONS -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" id="metrics-grid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/ai-engine.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/shell.js"></script>
+  <script src="../js/demo.js"></script>
+  <script>
+    NOVA_SHELL.init('Impact Simulator', 'Before AI vs After AI — Simulated Business Impact');
+    const D = window.NOVACART_DATA;
+
+    const BASE = {
+      cancellationRate: 11.3,
+      onTimeDelivery: 78.2,
+      avgDelivery: 31,
+      repeatPurchase: 42.1,
+    };
+
+    const metrics = [
+      { key: 'cancellationRate', label: 'Cancellation Rate', suffix: '%', lower_is_better: true, icon: '❌' },
+      { key: 'onTimeDelivery', label: 'On-Time Delivery', suffix: '%', lower_is_better: false, icon: '✅' },
+      { key: 'avgDelivery', label: 'Avg Delivery Time', suffix: ' min', lower_is_better: true, icon: '⏱' },
+      { key: 'repeatPurchase', label: 'Repeat Purchase Rate', suffix: '%', lower_is_better: false, icon: '🔄' },
+    ];
+
+    function getSliderValues() {
+      return {
+        interventionRate: parseInt(document.getElementById('sl-intervention').value),
+        phantomDetectionAccuracy: parseInt(document.getElementById('sl-phantom').value),
+        etaAccuracy: parseInt(document.getElementById('sl-eta').value),
+        recoveryRate: parseInt(document.getElementById('sl-recovery').value),
+        reorderConversion: parseInt(document.getElementById('sl-reorder').value),
+      };
+    }
+
+    function updateSliderDisplays() {
+      const s = getSliderValues();
+      document.getElementById('val-intervention').textContent = s.interventionRate;
+      document.getElementById('val-phantom').textContent = s.phantomDetectionAccuracy;
+      document.getElementById('val-eta').textContent = s.etaAccuracy;
+      document.getElementById('val-recovery').textContent = s.recoveryRate;
+      document.getElementById('val-reorder').textContent = s.reorderConversion;
+    }
+
+    function updateSim() {
+      updateSliderDisplays();
+      const settings = getSliderValues();
+      const impact = D.calcImpact(settings);
+
+      // Update hero
+      document.getElementById('hero-revenue').textContent = '₹' + impact.revenueRecovered.toLocaleString();
+      document.getElementById('hero-orders').textContent = impact.recoveredOrders;
+      document.getElementById('hero-customers').textContent = impact.customersRecovered;
+
+      // Render metric comparisons
+      document.getElementById('metrics-grid').innerHTML = metrics.map(m => {
+        const before = BASE[m.key];
+        const after = parseFloat(impact[m.key]);
+        const improved = m.lower_is_better ? after < before : after > before;
+        const changeAbs = Math.abs(after - before).toFixed(1);
+        const changeColor = improved ? '#22c55e' : '#ef4444';
+        const maxVal = Math.max(before, after) * 1.2;
+        const beforeH = Math.round((before / maxVal) * 80);
+        const afterH = Math.round((after / maxVal) * 80);
+
+        return `<div class="metric-compare">
+          <div class="metric-header">${m.icon} ${m.label}</div>
+          <div class="metric-values">
+            <div class="metric-before">
+              <div style="height:80px;display:flex;align-items:flex-end;margin-bottom:4px">
+                <div class="bar-visual bar-before" style="height:${beforeH}px"></div>
+              </div>
+              <div class="metric-val" style="color:#ef4444">${before}${m.suffix}</div>
+              <div class="metric-label">Before AI</div>
+            </div>
+            <div style="text-align:center">
+              <div class="metric-arrow">${improved ? '✅' : '→'}</div>
+              <div class="metric-change" style="color:${changeColor}">${improved?'−':'+'} ${changeAbs}${m.suffix}</div>
+            </div>
+            <div class="metric-after">
+              <div style="height:80px;display:flex;align-items:flex-end;margin-bottom:4px">
+                <div class="bar-visual bar-after" style="height:${afterH}px"></div>
+              </div>
+              <div class="metric-val" style="color:#22c55e">${after}${m.suffix}</div>
+              <div class="metric-label">After AI</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function resetSliders() {
+      document.getElementById('sl-intervention').value = 65;
+      document.getElementById('sl-phantom').value = 88;
+      document.getElementById('sl-eta').value = 91;
+      document.getElementById('sl-recovery').value = 72;
+      document.getElementById('sl-reorder').value = 38;
+      updateSim();
+      NOVA_UI.showToast('Sliders reset to defaults', 'info');
+    }
+
+    updateSim();
+  </script>
+</body>
+</html>

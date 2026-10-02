@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Rescue Center — NovaCart AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .rescue-card { background: var(--surface-100); border: 1px solid var(--surface-border); border-radius: var(--radius-xl); padding: 24px; margin-bottom: 16px; transition: all 0.2s; position: relative; overflow: hidden; }
+    .rescue-card::before { content:''; position:absolute; top:0;left:0;bottom:0;width:4px; }
+    .rescue-card.critical::before { background:var(--status-critical); }
+    .rescue-card.high::before { background:var(--status-high); }
+    .rescue-card.opportunity::before { background:var(--nova-purple); }
+    .rescue-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-lg); border-color:var(--surface-border-hover); }
+    .rescue-card.applied { opacity: 0.7; }
+    .rescue-header { display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap; }
+    .rescue-title { font-size:1rem;font-weight:700; }
+    .rescue-body { display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px; }
+    .rescue-section { background:var(--surface-200);border-radius:10px;padding:14px; }
+    .rescue-section-label { font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px; }
+    .rescue-section-val { font-size:0.875rem;color:var(--text-secondary);line-height:1.5; }
+    .rescue-flow { display:flex;align-items:center;gap:0;margin:16px 0;flex-wrap:wrap; }
+    .rescue-flow-step { flex:1;min-width:100px;text-align:center;padding:12px 8px;background:var(--surface-200);border-radius:10px;position:relative; }
+    .rescue-flow-step::after { content:'→';position:absolute;right:-12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:1.1rem;z-index:1; }
+    .rescue-flow-step:last-child::after { display:none; }
+    .rescue-flow-label { font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px; }
+    .rescue-flow-val { font-size:0.82rem;font-weight:600;color:var(--text-primary); }
+    .rescue-impact { background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(59,130,246,0.08));border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:14px;margin-bottom:16px; }
+    .rescue-actions { display:flex;gap:10px;flex-wrap:wrap; }
+    .score-row { display:flex;align-items:center;gap:10px;margin-bottom:8px; }
+    .score-factor { color:var(--text-secondary);font-size:0.82rem;min-width:140px; }
+    .score-weight { font-size:0.78rem;color:var(--text-muted);min-width:30px;text-align:right; }
+    .filter-tabs { display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap; }
+    .filter-tab { padding:6px 14px;border-radius:100px;font-size:0.8rem;font-weight:600;border:1px solid var(--surface-border);background:var(--surface-100);color:var(--text-muted);cursor:pointer;transition:all 0.15s; }
+    .filter-tab.active { background:var(--nova-blue-glow);color:var(--nova-blue-light);border-color:rgba(59,130,246,0.3); }
+    .filter-tab:hover:not(.active) { color:var(--text-primary); }
+    @media (max-width:768px) { .rescue-body { grid-template-columns:1fr; } .rescue-flow { flex-direction:column; } .rescue-flow-step::after { content:'↓';position:relative;right:auto;top:auto;transform:none;display:block;margin-top:4px; } }
+  </style>
+</head>
+<body class="admin-layout">
+
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-content" id="main-content">
+    <div class="topbar" id="topbar"></div>
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-inner">
+          <div>
+            <div class="page-title">🚨 AI Rescue Center</div>
+            <div class="page-subtitle">Detect → Explain → Recommend → Rescue. One platform. All connected.</div>
+          </div>
+          <div class="disclaimer-badge">⚠ PROTOTYPE SIMULATION DATA</div>
+        </div>
+      </div>
+
+      <!-- SUMMARY KPIS -->
+      <div class="grid-4 mb-20">
+        <div class="kpi-card" style="--accent-color:#ef4444">
+          <div class="kpi-label">🚨 Critical Alerts</div>
+          <div class="kpi-value" id="kpi-critical" style="color:#ef4444">0</div>
+          <div class="kpi-change kpi-down">Require immediate action</div>
+        </div>
+        <div class="kpi-card" style="--accent-color:#f97316">
+          <div class="kpi-label">⚠ High Priority</div>
+          <div class="kpi-value" id="kpi-high" style="color:#f97316">0</div>
+          <div class="kpi-change kpi-down">Action recommended</div>
+        </div>
+        <div class="kpi-card" style="--accent-color:#8b5cf6">
+          <div class="kpi-label">💡 Opportunities</div>
+          <div class="kpi-value" id="kpi-opps" style="color:#8b5cf6">0</div>
+          <div class="kpi-change kpi-up">Revenue recovery potential</div>
+        </div>
+        <div class="kpi-card" style="--accent-color:#22c55e">
+          <div class="kpi-label">✅ Actions Applied</div>
+          <div class="kpi-value" id="kpi-applied" style="color:#22c55e">0</div>
+          <div class="kpi-change kpi-up">Rescues executed</div>
+        </div>
+      </div>
+
+      <!-- FILTERS -->
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterRescues('ALL', this)">All Alerts</button>
+        <button class="filter-tab" onclick="filterRescues('PHANTOM_STOCK', this)">👻 Phantom Stock</button>
+        <button class="filter-tab" onclick="filterRescues('DELIVERY_RISK', this)">🚴 Delivery Risk</button>
+        <button class="filter-tab" onclick="filterRescues('REORDER_OPPORTUNITY', this)">🔄 Reorder</button>
+        <button class="filter-tab" onclick="filterRescues('APPLIED', this)">✅ Applied</button>
+      </div>
+
+      <!-- RESCUE CARDS -->
+      <div id="rescue-list">
+        <div class="empty-state"><div class="empty-icon">🚨</div><h3>Loading rescue actions...</h3></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/ai-engine.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/shell.js"></script>
+  <script src="../js/demo.js"></script>
+  <script>
+    NOVA_SHELL.init('AI Rescue Center', 'Detect · Explain · Recommend · Rescue');
+    const D = window.NOVACART_DATA;
+    const AI = window.NOVACART_AI;
+    const UI = window.NOVA_UI;
+
+    let rescueActions = [];
+    let currentFilter = 'ALL';
+
+    function loadRescueActions() {
+      rescueActions = AI.generateRescueActions(D);
+      updateKPIs();
+      renderRescues(rescueActions);
+    }
+
+    function updateKPIs() {
+      const critical = rescueActions.filter(a=>a.severity==='CRITICAL').length;
+      const high = rescueActions.filter(a=>a.severity==='HIGH').length;
+      const opps = rescueActions.filter(a=>a.severity==='OPPORTUNITY').length;
+      const applied = rescueActions.filter(a=>a.applied).length;
+
+      UI.animateNumber(document.getElementById('kpi-critical'), 0, critical, 800);
+      UI.animateNumber(document.getElementById('kpi-high'), 0, high, 900);
+      UI.animateNumber(document.getElementById('kpi-opps'), 0, opps, 1000);
+      UI.animateNumber(document.getElementById('kpi-applied'), 0, applied, 700);
+    }
+
+    function filterRescues(type, btn) {
+      currentFilter = type;
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      btn?.classList.add('active');
+      let filtered = type === 'ALL' ? rescueActions
+        : type === 'APPLIED' ? rescueActions.filter(a=>a.applied)
+        : rescueActions.filter(a=>a.type===type);
+      renderRescues(filtered);
+    }
+
+    function renderRescues(actions) {
+      if (!actions || actions.length === 0) {
+        document.getElementById('rescue-list').innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><h3>No alerts in this category</h3><p>All issues resolved or no matching filter.</p></div>';
+        return;
+      }
+
+      const typeIcons = { PHANTOM_STOCK: '👻', DELIVERY_RISK: '🚴', REORDER_OPPORTUNITY: '💡' };
+      const sevClass = { CRITICAL: 'critical', HIGH: 'high', MEDIUM: 'medium', OPPORTUNITY: 'opportunity' };
+
+      document.getElementById('rescue-list').innerHTML = actions.map(action => {
+        const factors = action.type === 'DELIVERY_RISK' ? [
+          { name: 'Store workload', weight: 90 },
+          { name: 'Traffic conditions', weight: 80 },
+          { name: 'Driver availability', weight: 70 },
+          { name: 'Picking delay', weight: 60 },
+        ] : action.type === 'PHANTOM_STOCK' ? [
+          { name: 'High cancel rate', weight: 85 },
+          { name: 'Inventory mismatch', weight: 78 },
+          { name: 'Stock unavailability reports', weight: 70 },
+          { name: 'Peak hour concentration', weight: 55 },
+        ] : [];
+
+        return `<div class="rescue-card ${sevClass[action.severity] || 'high'} ${action.applied?'applied':''}" id="${action.id}">
+          <div class="rescue-header">
+            <div>
+              <span class="badge ${UI.getRiskBadgeClass(action.severity)}" style="margin-bottom:8px;display:inline-flex">${action.severity}</span>
+              <div class="rescue-title">${action.title}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              ${action.applied ? '<span class="badge badge-low" style="font-size:0.75rem">✓ ACTION APPLIED</span>' : ''}
+              <button onclick="dismissRescue('${action.id}')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem" title="Dismiss">✕</button>
+            </div>
+          </div>
+
+          <div class="rescue-flow">
+            <div class="rescue-flow-step"><div class="rescue-flow-label">🔴 Problem</div><div class="rescue-flow-val">${action.type.replace('_',' ')}</div></div>
+            <div class="rescue-flow-step"><div class="rescue-flow-label">📊 Evidence</div><div class="rescue-flow-val">${action.evidence.substring(0,40)}…</div></div>
+            <div class="rescue-flow-step"><div class="rescue-flow-label">💡 Action</div><div class="rescue-flow-val">AI Recommended</div></div>
+            <div class="rescue-flow-step"><div class="rescue-flow-label">📈 Impact</div><div class="rescue-flow-val">Simulated</div></div>
+          </div>
+
+          <div class="rescue-body">
+            <div class="rescue-section">
+              <div class="rescue-section-label">🔍 Problem & Evidence</div>
+              <div class="rescue-section-val">${action.problem}</div>
+              <div style="margin-top:8px;font-size:0.78rem;color:var(--text-muted)">${action.evidence}</div>
+            </div>
+            <div class="rescue-section">
+              <div class="rescue-section-label">⚙️ Risk Factors (AI-assisted scoring)</div>
+              ${factors.map(f=>`<div class="score-row">
+                <span class="score-factor">${f.name}</span>
+                <div class="risk-bar-container" style="flex:1"><div class="risk-bar-fill risk-high" style="width:${f.weight}%"></div></div>
+                <span class="score-weight">${f.weight}%</span>
+              </div>`).join('')}
+              ${factors.length===0 ? '<div style="font-size:0.82rem;color:var(--text-muted)">Purchase history pattern analysis</div>' : ''}
+            </div>
+          </div>
+
+          <div class="rescue-impact">
+            <div style="font-size:0.78rem;font-weight:700;color:var(--nova-green);margin-bottom:6px">🧠 AI Recommendation</div>
+            <div style="font-size:0.88rem;color:var(--text-primary);margin-bottom:8px">${action.recommendation}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted)">📈 Expected Impact: ${action.impact}</div>
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">⚠ SIMULATED ESTIMATE — NOT REAL RESULTS</div>
+          </div>
+
+          <div class="rescue-actions">
+            ${action.applied ? `
+              <button class="btn-ghost btn-md" disabled style="opacity:0.6">✓ Rescue Applied</button>
+            ` : `
+              <button class="btn-primary btn-md" onclick="applyRescue('${action.id}')">✅ Apply Rescue Action</button>
+              <button class="btn-ghost btn-md" onclick="viewDetails('${action.id}')">🔍 View Full Evidence</button>
+            `}
+            ${action.type==='PHANTOM_STOCK' ? `<a href="phantom.html" class="btn-ghost btn-md">👻 Go to Phantom Stock</a>` : ''}
+            ${action.type==='DELIVERY_RISK' ? `<a href="delivery.html" class="btn-ghost btn-md">🗺️ Open Delivery Map</a>` : ''}
+            ${action.type==='REORDER_OPPORTUNITY' ? `<a href="reorder.html" class="btn-ghost btn-md">🔄 View Customers</a>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function applyRescue(actionId) {
+      const action = rescueActions.find(a=>a.id===actionId);
+      if (!action) return;
+      UI.confirm(`Apply rescue action: <strong>${action.title}</strong>?<br><br>This will update the demo state. In production this would trigger real system changes.`, () => {
+        action.applied = true;
+
+        // Side effects
+        if (action.type === 'PHANTOM_STOCK' && action.sku) {
+          const product = D.products.find(p=>p.id===action.sku);
+          if (product) product.applied = true;
+          D.state.kpis.phantomStockSKUs = Math.max(0, D.state.kpis.phantomStockSKUs - 1);
+          D.state.kpis.cancellationRate = Math.max(4, D.state.kpis.cancellationRate - 0.8);
+        }
+        if (action.type === 'DELIVERY_RISK' && action.orderId) {
+          const order = D.orders.find(o=>o.id===action.orderId);
+          if (order) { order.rescued = true; order.delayRisk = Math.max(10, order.delayRisk - 45); }
+          D.state.kpis.onTimeDelivery = Math.min(98, D.state.kpis.onTimeDelivery + 2.1);
+        }
+        if (action.type === 'REORDER_OPPORTUNITY') {
+          D.state.kpis.customersRecovered += 48;
+          D.state.kpis.revenueRecovered += 8928;
+        }
+
+        updateKPIs();
+        renderRescues(currentFilter === 'ALL' ? rescueActions : rescueActions.filter(a => a.type === currentFilter || (currentFilter==='APPLIED'&&a.applied)));
+        UI.showToast(`✅ Rescue applied: ${action.title}`, 'success');
+      });
+    }
+
+    function dismissRescue(actionId) {
+      rescueActions = rescueActions.filter(a=>a.id!==actionId);
+      updateKPIs();
+      filterRescues(currentFilter, null);
+      UI.showToast('Alert dismissed', 'info');
+    }
+
+    function viewDetails(actionId) {
+      const action = rescueActions.find(a=>a.id===actionId);
+      if (!action) return;
+      UI.showModal(`Evidence: ${action.title}`, `
+        <div style="margin-bottom:12px">
+          <div class="rescue-section-label">Problem</div>
+          <p style="color:var(--text-secondary);font-size:0.9rem;margin-top:4px">${action.problem}</p>
+        </div>
+        <div style="margin-bottom:12px">
+          <div class="rescue-section-label">Evidence</div>
+          <p style="color:var(--text-secondary);font-size:0.9rem;margin-top:4px">${action.evidence}</p>
+        </div>
+        <div style="margin-bottom:12px">
+          <div class="rescue-section-label">AI Recommendation</div>
+          <p style="color:var(--text-primary);font-size:0.9rem;margin-top:4px;font-weight:500">${action.recommendation}</p>
+        </div>
+        <div class="rescue-impact" style="margin:0">
+          <div style="font-size:0.78rem;font-weight:700;color:var(--nova-green);margin-bottom:4px">Expected Impact</div>
+          <p style="font-size:0.85rem;color:var(--text-secondary)">${action.impact}</p>
+          <p style="font-size:0.68rem;color:var(--text-muted);margin-top:6px">⚠ SIMULATED ESTIMATE — NOT REAL RESULTS</p>
+        </div>
+      `, [
+        { label: '✅ Apply Rescue', class:'btn-primary btn-md', onClick: () => applyRescue(actionId) },
+        { label: 'Close', class:'btn-ghost btn-md' },
+      ]);
+    }
+
+    loadRescueActions();
+  </script>
+</body>
+</html>

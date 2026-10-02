@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stores — NovaCart AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .stores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+    .store-card { background: var(--surface-100); border: 1px solid var(--surface-border); border-radius: var(--radius-xl); padding: 24px; transition: all 0.25s; }
+    .store-card:hover { border-color: var(--surface-border-hover); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .store-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+    .store-name { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+    .store-zone { font-size: 0.78rem; color: var(--text-muted); }
+    .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 16px 0; background: var(--surface-200); padding: 12px; border-radius: var(--radius-lg); }
+    .metric-item-val { font-family: var(--font-display); font-size: 1.2rem; font-weight: 800; color: var(--text-primary); }
+    .metric-item-lbl { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  </style>
+</head>
+<body class="admin-layout">
+
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-content" id="main-content">
+    <div class="topbar" id="topbar"></div>
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-inner">
+          <div>
+            <div class="page-title">🏪 Dark Store Operational Control</div>
+            <div class="page-subtitle">Monitor hub workload, rider capacity, and store-level phantom stock risk scores.</div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-primary btn-md" onclick="auditAllStores()">🔍 Run Inventory Audit on All Stores</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stores-grid" id="stores-container">
+        <!-- JS Populated -->
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/ai-engine.js"></script>
+  <script src="../js/demo.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      NOVA_SHELL.init('Stores', 'Store hub operations, phantom stock risk & rider allocation');
+      renderStores();
+    });
+
+    function renderStores() {
+      const container = document.getElementById('stores-container');
+      const stores = window.NOVACART_DATA.stores;
+
+      container.innerHTML = stores.map(s => `
+        <div class="store-card">
+          <div class="store-header">
+            <div>
+              <div class="store-name">${s.name}</div>
+              <div class="store-zone">Zone: ${s.zone} Bangalore</div>
+            </div>
+            <span class="badge ${s.status === 'CRITICAL' ? 'badge-red' : s.status === 'WARNING' ? 'badge-orange' : 'badge-green'}">
+              ${s.status}
+            </span>
+          </div>
+
+          <div class="metric-grid">
+            <div>
+              <div class="metric-item-val">${s.activeOrders}</div>
+              <div class="metric-item-lbl">Active Orders</div>
+            </div>
+            <div>
+              <div class="metric-item-val">${s.avgDelivery}m</div>
+              <div class="metric-item-lbl">Avg Delivery Time</div>
+            </div>
+            <div>
+              <div class="metric-item-val" style="color:${s.cancellationRate > 10 ? 'var(--nova-red)' : 'inherit'}">${s.cancellationRate}%</div>
+              <div class="metric-item-lbl">Cancel Rate</div>
+            </div>
+            <div>
+              <div class="metric-item-val">${s.drivers}</div>
+              <div class="metric-item-lbl">Active Drivers</div>
+            </div>
+          </div>
+
+          ${s.bottleneck !== 'None' ? `
+            <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:10px; font-size:0.8rem; color:var(--nova-red); margin-bottom:14px;">
+              ⚠️ <strong>Hub Bottleneck:</strong> ${s.bottleneck}
+            </div>
+          ` : ''}
+
+          <div style="display:flex; gap:8px;">
+            <button class="btn-primary btn-sm" style="flex:1" onclick="auditStore('${s.id}')">
+              🔍 Stock Audit
+            </button>
+            <button class="btn-outline btn-sm" style="flex:1" onclick="reassignRiders('${s.id}')">
+              🚴 Add Rider
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function auditStore(id) {
+      const store = window.NOVACART_DATA.stores.find(s => s.id === id);
+      if (store) {
+        NOVA_UI.showToast(`Triggered physical inventory audit for ${store.name}`, 'success');
+      }
+    }
+
+    function reassignRiders(id) {
+      const store = window.NOVACART_DATA.stores.find(s => s.id === id);
+      if (store) {
+        store.drivers += 1;
+        NOVA_UI.showToast(`Reassigned +1 driver to ${store.name}`, 'info');
+        renderStores();
+      }
+    }
+
+    function auditAllStores() {
+      NOVA_UI.showToast('Initiated batch inventory scan across all 5 dark stores', 'success');
+    }
+  </script>
+</body>
+</html>

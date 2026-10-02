@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Products &amp; Inventory — NovaCart AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body class="admin-layout">
+
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-content" id="main-content">
+    <div class="topbar" id="topbar"></div>
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-inner">
+          <div>
+            <div class="page-title">📦 Products &amp; Phantom Stock Catalog</div>
+            <div class="page-subtitle">Monitor SKU cancellation rates, phantom stock discrepancies, and smart substitution mappings.</div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <a href="phantom.html" class="btn-primary btn-md">👻 Open Phantom AI Engine</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTER PANEL -->
+      <div class="section-panel mb-20">
+        <div class="section-panel-header">
+          <div class="section-panel-title"><span>🔍</span> Filter Catalog</div>
+        </div>
+        <div class="section-panel-body">
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+            <div>
+              <label class="form-label">Stock Status</label>
+              <select id="prod-status" class="select-input" style="width:100%" onchange="renderProducts()">
+                <option value="">All Statuses</option>
+                <option value="MISMATCH">🔴 Mismatch (Phantom Stock)</option>
+                <option value="LOW">🟡 Low Stock</option>
+                <option value="OK">🟢 In Stock OK</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Risk Rating</label>
+              <select id="prod-risk" class="select-input" style="width:100%" onchange="renderProducts()">
+                <option value="">All Risks</option>
+                <option value="CRITICAL">Critical Risk (>25% cancel)</option>
+                <option value="HIGH">High Risk (15-25%)</option>
+                <option value="MEDIUM">Medium Risk (10-15%)</option>
+                <option value="LOW">Low Risk (<10%)</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Search Product</label>
+              <input type="text" id="prod-search" class="search-input" placeholder="Search SKU or product name..." oninput="renderProducts()" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLE CONTAINER -->
+      <div class="section-panel">
+        <div class="section-panel-header">
+          <div class="section-panel-title"><span>📋</span> Active SKUs (${window.NOVACART_DATA.products.length})</div>
+        </div>
+        <div class="section-panel-body" style="padding:0">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>SKU ID</th>
+                  <th>Product Name</th>
+                  <th>Category</th>
+                  <th>Store</th>
+                  <th>Price</th>
+                  <th>Cancel Rate</th>
+                  <th>Main Reason</th>
+                  <th>Risk Score</th>
+                  <th>Stock Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="prod-tbody">
+                <!-- JS Populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/ai-engine.js"></script>
+  <script src="../js/demo.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      NOVA_SHELL.init('Products', 'SKU inventory health, phantom detection & substitution management');
+      renderProducts();
+    });
+
+    function renderProducts() {
+      const tbody = document.getElementById('prod-tbody');
+      const status = document.getElementById('prod-status').value;
+      const risk = document.getElementById('prod-risk').value;
+      const search = document.getElementById('prod-search').value.toLowerCase();
+
+      let prods = window.NOVACART_DATA.products;
+
+      if (status) prods = prods.filter(p => p.stockStatus === status);
+      if (risk) prods = prods.filter(p => p.risk === risk);
+      if (search) prods = prods.filter(p => p.name.toLowerCase().includes(search) || p.id.toLowerCase().includes(search));
+
+      tbody.innerHTML = prods.map(p => `
+        <tr>
+          <td><code style="font-size:0.8rem; color:var(--nova-blue-light)">${p.id}</code></td>
+          <td><strong>${p.name}</strong></td>
+          <td><span class="badge badge-gray">${p.category}</span></td>
+          <td>${p.storeId}</td>
+          <td>₹${p.price}</td>
+          <td><strong style="color:${p.cancellationRate > 15 ? 'var(--nova-red)' : 'inherit'}">${p.cancellationRate}%</strong></td>
+          <td style="font-size:0.78rem; color:var(--text-muted)">${p.mainReason}</td>
+          <td>
+            <span class="badge ${p.risk === 'CRITICAL' ? 'badge-red' : p.risk === 'HIGH' ? 'badge-orange' : p.risk === 'MEDIUM' ? 'badge-yellow' : 'badge-green'}">
+              ${p.riskScore} (${p.risk})
+            </span>
+          </td>
+          <td>
+            <span class="badge ${p.stockStatus === 'MISMATCH' ? 'badge-red' : p.stockStatus === 'LOW' ? 'badge-yellow' : 'badge-green'}">
+              ${p.stockStatus}
+            </span>
+          </td>
+          <td>
+            ${p.applied ? `<span style="font-size:0.75rem; color:var(--nova-green)">✓ Rescued</span>` : `
+              <button class="btn-primary btn-sm" onclick="triggerSkuRescue('${p.id}')">
+                🛡️ Rescue SKU
+              </button>
+            `}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function triggerSkuRescue(skuId) {
+      const p = window.NOVACART_DATA.products.find(item => item.id === skuId);
+      if (p) {
+        p.applied = true;
+        p.stockStatus = 'OK';
+        p.risk = 'LOW';
+        p.riskScore = 20;
+        NOVA_UI.showToast(`Applied Rescue Action for ${p.name}: Auto-substitute rule activated & Store stock updated.`, 'success');
+        renderProducts();
+      }
+    }
+  </script>
+</body>
+</html>

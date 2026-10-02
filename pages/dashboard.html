@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Control Center — NovaCart AI</title>
+  <meta name="description" content="NovaCart AI Control Center — Real-time AI command center for quick-commerce intelligence." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body class="admin-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content" id="main-content">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="page-content">
+
+      <!-- 1. HERO COMMAND INTRO BANNER -->
+      <div class="dashboard-intro-banner">
+        <div class="intro-greeting-tag">AI OPERATIONAL OVERVIEW</div>
+        <div class="intro-greeting-title">GOOD MORNING, NOVACART</div>
+        <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:14px;">
+          Your AI system has identified <strong>3 priority actions</strong> requiring attention today.
+        </p>
+
+        <div class="priority-summary-grid">
+          <div class="priority-summary-card">
+            <div>
+              <div class="priority-card-num">01 PHANTOM STOCK</div>
+              <div class="priority-card-title">8 SKUs require attention</div>
+              <div class="priority-card-sub">Concentrated at Store #102</div>
+            </div>
+            <a href="phantom.html" style="font-size:0.78rem; color:var(--nova-blue-light); margin-top:10px; font-weight:600">Inspect SKUs →</a>
+          </div>
+
+          <div class="priority-summary-card">
+            <div>
+              <div class="priority-card-num">02 DELIVERY RISK</div>
+              <div class="priority-card-title">53 orders need monitoring</div>
+              <div class="priority-card-sub">Peak ETA delay risk (7-9 PM)</div>
+            </div>
+            <a href="delivery.html" style="font-size:0.78rem; color:var(--nova-blue-light); margin-top:10px; font-weight:600">Review Deliveries →</a>
+          </div>
+
+          <div class="priority-summary-card">
+            <div>
+              <div class="priority-card-num">03 REORDER OPPORTUNITY</div>
+              <div class="priority-card-title">127 customers ready to reorder</div>
+              <div class="priority-card-sub">Breakfast essentials segment</div>
+            </div>
+            <a href="reorder.html" style="font-size:0.78rem; color:var(--nova-blue-light); margin-top:10px; font-weight:600">Launch Campaign →</a>
+          </div>
+        </div>
+
+        <div style="margin-top:16px; display:flex; justify-content:flex-end">
+          <a href="rescue.html" class="btn-primary btn-md">OPEN AI RESCUE CENTER →</a>
+        </div>
+      </div>
+
+      <!-- 2. PRIMARY 4 METRIC CARDS -->
+      <div class="primary-kpi-grid" id="primary-kpis">
+        <div class="kpi-card-clean">
+          <div class="kpi-card-label">Orders Today</div>
+          <div class="kpi-card-num">892</div>
+          <div class="kpi-card-diff diff-up">▲ 12% vs yesterday</div>
+        </div>
+        <div class="kpi-card-clean">
+          <div class="kpi-card-label">Cancellation Rate</div>
+          <div class="kpi-card-num" style="color:var(--status-critical)">11.3%</div>
+          <div class="kpi-card-diff diff-down">▲ 2.1% this week</div>
+        </div>
+        <div class="kpi-card-clean">
+          <div class="kpi-card-label">On-Time Delivery</div>
+          <div class="kpi-card-num">78.2%</div>
+          <div class="kpi-card-diff diff-down">▼ 3.4% this week</div>
+        </div>
+        <div class="kpi-card-clean">
+          <div class="kpi-card-label">Repeat Purchase Rate</div>
+          <div class="kpi-card-num">42.1%</div>
+          <div class="kpi-card-diff diff-up">▲ 1.2% this month</div>
+        </div>
+      </div>
+
+      <!-- 3. SECONDARY COMPACT METRICS ROW -->
+      <div class="secondary-kpi-row" id="secondary-kpis">
+        <div class="compact-metric-item">
+          <span class="compact-metric-label">Phantom Stock</span>
+          <span class="compact-metric-val" style="color:var(--status-warning)">8 SKUs</span>
+        </div>
+        <div class="compact-metric-item">
+          <span class="compact-metric-label">Average Honest ETA</span>
+          <span class="compact-metric-val">17.4 min</span>
+        </div>
+        <div class="compact-metric-item">
+          <span class="compact-metric-label">Revenue Recovered</span>
+          <span class="compact-metric-val" id="val-rev-rec" style="color:var(--status-success)">₹0</span>
+        </div>
+        <div class="compact-metric-item">
+          <span class="compact-metric-label">Customers Recovered</span>
+          <span class="compact-metric-val" id="val-cust-rec">0</span>
+        </div>
+      </div>
+
+      <!-- 4. NOVACART BUSINESS HEALTH DIMENSIONS -->
+      <div class="business-health-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h3 style="font-size:1.1rem">NOVACART BUSINESS HEALTH</h3>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-top:2px">Real-time operational reliability scores across key dimensions.</p>
+          </div>
+          <span class="badge badge-blue">Overall Health: 73.7%</span>
+        </div>
+
+        <div class="health-dimensions-grid">
+          <div class="health-dim-card">
+            <div class="health-dim-header">
+              <span class="health-dim-name">Inventory Reliability</span>
+              <span class="health-dim-pct" style="color:var(--status-warning)">72%</span>
+            </div>
+            <div class="health-progress-bar">
+              <div class="health-progress-fill" style="width:72%; background:var(--status-warning)"></div>
+            </div>
+            <div class="health-dim-desc">"8 SKUs are showing phantom-stock patterns."</div>
+          </div>
+
+          <div class="health-dim-card">
+            <div class="health-dim-header">
+              <span class="health-dim-name">Delivery Reliability</span>
+              <span class="health-dim-pct" style="color:var(--nova-blue-light)">78%</span>
+            </div>
+            <div class="health-progress-bar">
+              <div class="health-progress-fill" style="width:78%; background:var(--nova-blue)"></div>
+            </div>
+            <div class="health-dim-desc">"Evening peak hour ETA variance is +7 mins."</div>
+          </div>
+
+          <div class="health-dim-card">
+            <div class="health-dim-header">
+              <span class="health-dim-name">Customer Retention</span>
+              <span class="health-dim-pct">64%</span>
+            </div>
+            <div class="health-progress-bar">
+              <div class="health-progress-fill" style="width:64%"></div>
+            </div>
+            <div class="health-dim-desc">"127 regular buyers past typical order cycle."</div>
+          </div>
+
+          <div class="health-dim-card">
+            <div class="health-dim-header">
+              <span class="health-dim-name">Recovery Opportunity</span>
+              <span class="health-dim-pct" style="color:var(--status-success)">81%</span>
+            </div>
+            <div class="health-progress-bar">
+              <div class="health-progress-fill" style="width:81%; background:var(--status-success)"></div>
+            </div>
+            <div class="health-dim-desc">"High potential to rescue lost reorders."</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. AI RESCUE CENTER HERO FEATURE CARD -->
+      <div class="rescue-copilot-card">
+        <div>
+          <span class="badge badge-blue mb-8">AI OPERATIONS CO-PILOT</span>
+          <h2 style="font-size:1.4rem; color:var(--text-primary); margin:4px 0;">AI RESCUE CENTER</h2>
+          <p style="font-size:0.85rem; color:var(--text-secondary); max-width:480px;">
+            The central engine connecting phantom stock detection, delivery intelligence, and reorder campaigns.
+          </p>
+        </div>
+
+        <div class="copilot-stats">
+          <div class="copilot-stat-item">
+            <div class="copilot-stat-num" style="color:var(--status-critical)">3</div>
+            <div class="copilot-stat-lbl">Problems Detected</div>
+          </div>
+          <div class="copilot-stat-item">
+            <div class="copilot-stat-num" style="color:var(--nova-blue-light)">2</div>
+            <div class="copilot-stat-lbl">Actions Ready</div>
+          </div>
+          <div class="copilot-stat-item">
+            <div class="copilot-stat-num" style="color:var(--status-success)">₹18,400</div>
+            <div class="copilot-stat-lbl">Potential Recovery</div>
+          </div>
+        </div>
+
+        <div>
+          <a href="rescue.html" class="btn-primary btn-md">REVIEW PRIORITY ACTIONS →</a>
+        </div>
+      </div>
+
+      <!-- 6. AI PRIORITY ACTIONS (TOP 3 ALERTS) -->
+      <div class="card-panel mb-24">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🚨 AI PRIORITY ACTIONS</div>
+            <div style="font-size:0.78rem; color:var(--text-muted)">Critical operational issues requiring attention right now</div>
+          </div>
+          <a href="rescue.html" class="btn-ghost btn-sm">View All Rescues →</a>
+        </div>
+
+        <div class="alerts-container">
+          <!-- CRITICAL ALERT -->
+          <div class="alert-action-card">
+            <div>
+              <span class="badge badge-red">CRITICAL</span>
+              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">PHANTOM STOCK</div>
+            </div>
+            <div>
+              <div class="alert-problem-title">Milk 500ml</div>
+              <div class="alert-problem-sub">31% cancellation rate &bull; Store #102</div>
+            </div>
+            <div>
+              <div class="alert-evidence">Why: Stock mismatch detected between app catalog &amp; shelf.</div>
+              <div class="alert-rec">AI Rec: Verify inventory &amp; reduce displayed stock.</div>
+            </div>
+            <div>
+              <button class="btn-danger btn-sm" onclick="runRescueModal('SKU001', 'Phantom Stock Audit')">REVIEW</button>
+            </div>
+          </div>
+
+          <!-- HIGH ALERT -->
+          <div class="alert-action-card">
+            <div>
+              <span class="badge badge-orange">HIGH</span>
+              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">DELIVERY RISK</div>
+            </div>
+            <div>
+              <div class="alert-problem-title">Order #NC-2048</div>
+              <div class="alert-problem-sub">86% delay probability &bull; Rider R17</div>
+            </div>
+            <div>
+              <div class="alert-evidence">Why: Rider completing 1 nearby drop + peak traffic.</div>
+              <div class="alert-rec">AI Rec: Assign nearest available rider &amp; issue delay voucher.</div>
+            </div>
+            <div>
+              <button class="btn-primary btn-sm" onclick="runRescueModal('NC-2048', 'Order Delay Rescue')">RESCUE</button>
+            </div>
+          </div>
+
+          <!-- OPPORTUNITY ALERT -->
+          <div class="alert-action-card">
+            <div>
+              <span class="badge badge-green">OPPORTUNITY</span>
+              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">REORDER</div>
+            </div>
+            <div>
+              <div class="alert-problem-title">127 Customers</div>
+              <div class="alert-problem-sub">High reorder probability &bull; Essentials</div>
+            </div>
+            <div>
+              <div class="alert-evidence">Why: Regular 3-day purchase cycle reached.</div>
+              <div class="alert-rec">AI Rec: Launch personalized "Breakfast Essentials" bundle.</div>
+            </div>
+            <div>
+              <a href="reorder.html" class="btn-secondary btn-sm">VIEW</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. HOW AI SEES NOVACART VISUAL FLOW -->
+      <div class="ai-flow-panel">
+        <div class="card-title" style="margin-bottom:4px;">🧠 HOW AI SEES NOVACART</div>
+        <div style="font-size:0.78rem; color:var(--text-muted);">End-to-end intelligence loop connecting data to business outcomes.</div>
+
+        <div class="ai-flow-diagram">
+          <div class="ai-flow-node">
+            <div class="ai-flow-node-title">01 DATA</div>
+            <div class="ai-flow-node-items">Orders &bull; Inventory<br/>Riders &bull; History</div>
+          </div>
+          <div class="ai-flow-connector">⟶</div>
+          <div class="ai-flow-node">
+            <div class="ai-flow-node-title">02 AI ANALYSIS</div>
+            <div class="ai-flow-node-items">Risk Detection<br/>Patterns &bull; Predictions</div>
+          </div>
+          <div class="ai-flow-connector">⟶</div>
+          <div class="ai-flow-node">
+            <div class="ai-flow-node-title">03 AI DECISION</div>
+            <div class="ai-flow-node-items">Explain Causes<br/>Prioritize Actions</div>
+          </div>
+          <div class="ai-flow-connector">⟶</div>
+          <div class="ai-flow-node" style="border-color:var(--status-success-border)">
+            <div class="ai-flow-node-title" style="color:var(--status-success)">04 BUSINESS ACTION</div>
+            <div class="ai-flow-node-items">Prevent Cancellations<br/>Rescue &amp; Recover</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/ai-engine.js"></script>
+  <script src="../js/demo.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      NOVA_SHELL.init('AI Control Center', 'Real-time quick-commerce intelligence command dashboard');
+      updateDashboardData();
+    });
+
+    function updateDashboardData() {
+      const kpis = window.NOVACART_DATA.state.kpis;
+      if (kpis.revenueRecovered > 0) {
+        const revEl = document.getElementById('val-rev-rec');
+        const custEl = document.getElementById('val-cust-rec');
+        if (revEl) revEl.textContent = '₹' + kpis.revenueRecovered.toLocaleString();
+        if (custEl) custEl.textContent = kpis.customersRecovered;
+      }
+    }
+
+    function runRescueModal(id, actionName) {
+      NOVA_UI.showProcessingModal(actionName, () => {
+        NOVA_UI.showToast(`Action Applied for ${id}: Risk reduced!`, 'success');
+        window.NOVACART_DATA.state.kpis.revenueRecovered = 18400;
+        window.NOVACART_DATA.state.kpis.customersRecovered = 48;
+        updateDashboardData();
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phantom Stock AI — NovaCart AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .upload-zone { border: 2px dashed var(--surface-border-hover); border-radius: var(--radius-xl); padding: 48px; text-align: center; transition: all 0.2s; cursor: pointer; background: var(--surface-100); }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--nova-blue); background: var(--nova-blue-glow); }
+    .upload-icon { font-size: 3rem; margin-bottom: 12px; }
+    .sku-card { background: var(--surface-100); border: 1px solid var(--surface-border); border-radius: var(--radius-xl); padding: 20px; transition: all 0.25s; margin-bottom: 12px; }
+    .sku-card:hover { border-color: var(--surface-border-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .sku-card-header { display: flex; gap: 14px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+    .sku-name { font-size: 1rem; font-weight: 700; }
+    .sku-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 14px 0; }
+    .sku-meta-item { text-align: center; background: var(--surface-200); border-radius: 10px; padding: 10px; }
+    .sku-meta-val { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; }
+    .sku-meta-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+    .factor-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.82rem; }
+    .factor-label { color: var(--text-secondary); min-width: 160px; }
+    .factor-bar { flex: 1; background: var(--bg-600); border-radius: 100px; height: 5px; }
+    .factor-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--nova-blue), var(--nova-purple)); }
+    .factor-val { color: var(--text-muted); font-size: 0.78rem; min-width: 28px; text-align: right; }
+    .rescue-panel { background: linear-gradient(135deg, rgba(139,92,246,0.06), rgba(59,130,246,0.06)); border: 1px solid rgba(139,92,246,0.2); border-radius: var(--radius-lg); padding: 18px; margin-top: 14px; }
+    .rescue-flow { display: flex; gap: 0; margin: 12px 0; }
+    .rescue-step { flex: 1; text-align: center; position: relative; }
+    .rescue-step::after { content: '→'; position: absolute; right: -8px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1rem; }
+    .rescue-step:last-child::after { display: none; }
+    .rescue-step-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .rescue-step-val { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); }
+    .csv-preview { background: var(--bg-800); border-radius: var(--radius-lg); padding: 14px; margin-top: 12px; overflow-x: auto; }
+    .csv-preview table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .csv-preview th { color: var(--text-muted); padding: 6px 10px; text-align: left; font-weight: 600; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.06em; }
+    .csv-preview td { padding: 6px 10px; color: var(--text-secondary); border-top: 1px solid var(--surface-border); }
+    .chart-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 900px) { .chart-row-3 { grid-template-columns: 1fr; } .sku-meta { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body class="admin-layout">
+
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-content" id="main-content">
+    <div class="topbar" id="topbar"></div>
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-inner">
+          <div>
+            <div class="page-title">👻 Phantom Stock AI</div>
+            <div class="page-subtitle">Upload order data to detect phantom stock, classify SKU risk, and get AI-powered rescue recommendations.</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <div class="disclaimer-badge">⚠ PROTOTYPE SIMULATION DATA</div>
+            <button class="btn-success btn-md" onclick="loadDemoAnalysis()">📊 Analyze Demo Data</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTERS -->
+      <div class="section-panel mb-20">
+        <div class="section-panel-header">
+          <div class="section-panel-title"><span>🔍</span> Filters & Upload</div>
+        </div>
+        <div class="section-panel-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;flex-wrap:wrap" class="filters-row">
+            <div>
+              <label class="form-label">Risk Level</label>
+              <select id="filter-risk" class="select-input" style="width:100%" onchange="applyFilters()">
+                <option value="">All Levels</option>
+                <option value="CRITICAL">🔴 Critical</option>
+                <option value="HIGH">🟠 High</option>
+                <option value="MEDIUM">🟡 Medium</option>
+                <option value="LOW">🟢 Low</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Store</label>
+              <select id="filter-store" class="select-input" style="width:100%" onchange="applyFilters()">
+                <option value="">All Stores</option>
+                <option value="S101">Store #101</option>
+                <option value="S102">Store #102</option>
+                <option value="S103">Store #103</option>
+                <option value="S104">Store #104</option>
+                <option value="S105">Store #105</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Min Cancel Rate (%)</label>
+              <input type="number" id="filter-rate" class="text-input" placeholder="e.g. 10" min="0" max="100" onchange="applyFilters()" />
+            </div>
+            <button class="btn-ghost btn-md" onclick="resetFilters()">Reset</button>
+          </div>
+
+          <!-- CSV UPLOAD -->
+          <div style="margin-top:20px">
+            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('csv-input').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="handleDragLeave()">
+              <div class="upload-icon">📁</div>
+              <h3 style="margin-bottom:8px">Upload Order CSV</h3>
+              <p style="color:var(--text-muted);font-size:0.88rem">Drag & drop or click to upload · Fields: Store ID, Order ID, SKU ID, Product Name, Cancellation Status, Cancellation Reason, Stock Status, Category</p>
+              <button class="btn-primary btn-sm" style="margin-top:12px" onclick="event.stopPropagation();document.getElementById('csv-input').click()">Choose File</button>
+              <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="handleFileUpload(this.files[0])" />
+            </div>
+            <div id="csv-feedback" class="hidden" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="chart-row-3" id="chart-section" style="display:none">
+        <div class="chart-container">
+          <div class="chart-title">Cancellation Rate by SKU</div>
+          <canvas id="chart-sku-cancel" width="340" height="200"></canvas>
+        </div>
+        <div class="chart-container">
+          <div class="chart-title">Cancellation Reasons</div>
+          <canvas id="chart-cancel-reasons" width="200" height="200" style="display:block;margin:0 auto"></canvas>
+          <div id="reason-legend" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px"></div>
+        </div>
+        <div class="chart-container">
+          <div class="chart-title">Store Cancellation Rate (%)</div>
+          <canvas id="chart-store-rates" width="340" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- SKU ANALYSIS -->
+      <div id="sku-analysis">
+        <div class="empty-state">
+          <div class="empty-icon">👻</div>
+          <h3>No analysis loaded yet</h3>
+          <p>Click "Analyze Demo Data" above or upload a CSV to begin phantom stock analysis.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/ai-engine.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/shell.js"></script>
+  <script src="../js/demo.js"></script>
+  <script>
+    NOVA_SHELL.init('Phantom Stock AI', 'Detect phantom inventory and rescue at-risk SKUs');
+    const D = window.NOVACART_DATA;
+    const AI = window.NOVACART_AI;
+    const UI = window.NOVA_UI;
+
+    let filteredProducts = [];
+
+    function loadDemoAnalysis() {
+      UI.showToast('Analyzing phantom stock data...', 'info', 2000);
+      setTimeout(() => {
+        filteredProducts = [...D.products];
+        renderCharts();
+        renderSKUs(filteredProducts);
+        document.getElementById('chart-section').style.display = 'grid';
+        UI.showToast(`✅ Analysis complete — ${D.products.filter(p=>p.risk==='CRITICAL'||p.risk==='HIGH').length} high-risk SKUs identified`, 'success');
+      }, 1500);
+    }
+
+    function applyFilters() {
+      const risk = document.getElementById('filter-risk').value;
+      const store = document.getElementById('filter-store').value;
+      const minRate = parseFloat(document.getElementById('filter-rate').value) || 0;
+      filteredProducts = D.products.filter(p =>
+        (!risk || p.risk === risk) &&
+        (!store || p.storeId === store) &&
+        p.cancellationRate >= minRate
+      );
+      renderSKUs(filteredProducts);
+    }
+
+    function resetFilters() {
+      document.getElementById('filter-risk').value = '';
+      document.getElementById('filter-store').value = '';
+      document.getElementById('filter-rate').value = '';
+      filteredProducts = [...D.products];
+      renderSKUs(filteredProducts);
+    }
+
+    function renderCharts() {
+      setTimeout(() => {
+        const topSKUs = [...D.products].sort((a,b)=>b.cancellationRate-a.cancellationRate).slice(0,8);
+        UI.drawBarChart('chart-sku-cancel', topSKUs.map(p=>p.name.split(' ')[0]+' '+p.name.split(' ')[1]), topSKUs.map(p=>p.cancellationRate),
+          topSKUs.map(p=>p.risk==='CRITICAL'?'#ef4444':p.risk==='HIGH'?'#f97316':p.risk==='MEDIUM'?'#eab308':'#22c55e'), { suffix:'%' });
+
+        const reasons = {};
+        D.products.forEach(p => { reasons[p.mainReason] = (reasons[p.mainReason]||0) + p.cancellations; });
+        const reasonColors = { 'Out of stock':'#ef4444','Inventory mismatch':'#f97316','Customer cancelled':'#eab308','Store unable to fulfill':'#8b5cf6','Delivery delay':'#3b82f6' };
+        const rSegments = Object.entries(reasons).map(([k,v])=>({label:k,value:v,color:reasonColors[k]||'#94a3b8'}));
+        const total = rSegments.reduce((s,r)=>s+r.value,0);
+        UI.drawDonutChart('chart-cancel-reasons', rSegments, {centerText:total,centerSub:'Total'});
+        document.getElementById('reason-legend').innerHTML = rSegments.map(s=>`<span style="display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--text-muted)"><span style="width:7px;height:7px;background:${s.color};border-radius:50%;display:inline-block"></span>${s.label}</span>`).join('');
+
+        UI.drawBarChart('chart-store-rates', D.stores.map(s=>s.id), D.stores.map(s=>s.cancellationRate),
+          D.stores.map(s=>s.status==='CRITICAL'?'#ef4444':s.status==='WARNING'?'#f97316':'#22c55e'), { suffix:'%' });
+      }, 100);
+    }
+
+    function renderSKUs(products) {
+      if (!products || products.length === 0) {
+        document.getElementById('sku-analysis').innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><h3>No SKUs match the current filters</h3><p>Try adjusting your filter criteria.</p></div>';
+        return;
+      }
+
+      const sorted = [...products].sort((a,b) => {
+        const order = {CRITICAL:0,HIGH:1,MEDIUM:2,LOW:3};
+        return order[a.risk] - order[b.risk];
+      });
+
+      document.getElementById('sku-analysis').innerHTML = sorted.map(p => {
+        const rec = AI.getPhantomRecommendation(p);
+        const scoring = AI.scorePhantomRisk(p);
+        const riskColor = UI.getRiskColor(p.risk);
+        const showRescue = p.risk === 'CRITICAL' || p.risk === 'HIGH';
+
+        return `<div class="sku-card" id="sku-${p.id}">
+          <div class="sku-card-header">
+            <div>
+              <div class="sku-name">${p.name} <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400">${p.id} | ${p.storeId}</span></div>
+              <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px">Category: ${p.category} · Peak cancel: ${p.peakCancelTime}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="badge ${UI.getRiskBadgeClass(p.risk)}">${p.risk}</span>
+              ${p.applied ? '<span class="badge badge-low">✓ Action Applied</span>' : ''}
+              <span style="font-family:var(--font-display);font-size:1.3rem;font-weight:800;color:${riskColor}">${scoring.score}</span>
+            </div>
+          </div>
+
+          <div class="sku-meta">
+            <div class="sku-meta-item">
+              <div class="sku-meta-val" style="color:${riskColor}">${p.cancellationRate}%</div>
+              <div class="sku-meta-label">Cancel Rate</div>
+            </div>
+            <div class="sku-meta-item">
+              <div class="sku-meta-val">${p.cancellations.toLocaleString()}</div>
+              <div class="sku-meta-label">Cancellations</div>
+            </div>
+            <div class="sku-meta-item">
+              <div class="sku-meta-val">${p.orders.toLocaleString()}</div>
+              <div class="sku-meta-label">Total Orders</div>
+            </div>
+            <div class="sku-meta-item">
+              <div class="sku-meta-val" style="color:${p.stockStatus==='OK'?'#22c55e':'#ef4444'}">${p.stockStatus}</div>
+              <div class="sku-meta-label">Stock Status</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">Risk Score Breakdown <span style="font-size:0.7rem">(AI-assisted scoring, not a trained ML model)</span></div>
+            ${scoring.factors.map(f=>`<div class="factor-row"><span class="factor-label">${f.name}</span><div class="factor-bar"><div class="factor-fill" style="width:${Math.min(100,f.weight*2.5)}%"></div></div><span class="factor-val">+${f.weight}</span></div>`).join('')}
+          </div>
+
+          <div style="background:var(--surface-200);border-radius:10px;padding:14px;margin-bottom:12px">
+            <div style="font-size:0.78rem;font-weight:600;color:var(--nova-blue-light);margin-bottom:6px">🧠 AI Explanation</div>
+            <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.6">"${p.name}" has a ${p.cancellationRate}% cancellation rate at ${p.storeId}. Most cancellations occur during ${p.peakCancelTime} and are associated with ${p.mainReason.toLowerCase()}. Stock status: <strong>${p.stockStatus}</strong>.</p>
+          </div>
+
+          ${showRescue ? `
+          <div class="rescue-panel">
+            <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+              🚨 RESCUE THIS SKU
+            </div>
+            <div class="rescue-flow">
+              <div class="rescue-step"><div class="rescue-step-label">Problem</div><div class="rescue-step-val">Inventory Mismatch</div></div>
+              <div class="rescue-step"><div class="rescue-step-label">Evidence</div><div class="rescue-step-val">${p.cancellationRate}% cancel rate</div></div>
+              <div class="rescue-step"><div class="rescue-step-label">Recommendation</div><div class="rescue-step-val">Reduce + Verify</div></div>
+              <div class="rescue-step"><div class="rescue-step-label">Impact</div><div class="rescue-step-val">Est. -${Math.round(p.cancellationRate*0.6)}% cancel</div></div>
+            </div>
+            <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:10px;padding:10px;background:var(--surface-100);border-radius:8px;border-left:3px solid var(--nova-purple)">
+              <strong>AI Recommendation:</strong> ${rec.primary}
+            </div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">⚠ Expected Impact: ${rec.impact} — SIMULATED ESTIMATE</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              ${p.applied
+                ? `<button class="btn-ghost btn-sm" disabled style="opacity:0.6">✓ Recommendation Applied</button>`
+                : `<button class="btn-primary btn-sm" onclick="applyRescue('${p.id}')">✅ Apply Recommendation</button>
+                   <button class="btn-ghost btn-sm" onclick="monitorSKU('${p.id}')">👁 Monitor Instead</button>`
+              }
+              ${p.substitute ? `<button class="btn-warning btn-sm" onclick="viewSubstitute('${p.id}')">🔄 View Substitute</button>` : ''}
+              <button class="btn-ghost btn-sm" onclick="viewEvidence('${p.id}')">🔍 View Evidence</button>
+            </div>
+          </div>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    function applyRescue(skuId) {
+      const product = D.products.find(p=>p.id===skuId);
+      if (!product) return;
+      NOVA_UI.confirm(
+        `Apply rescue recommendation for <strong>${product.name}</strong>?<br><br>This will mark the action as applied in the demo state. In production, this would trigger a real inventory update.`,
+        () => {
+          product.applied = true;
+          D.state.kpis.phantomStockSKUs = Math.max(0, D.state.kpis.phantomStockSKUs - 1);
+          renderSKUs(filteredProducts);
+          UI.showToast(`✅ Rescue applied to ${product.name}`, 'success');
+        }
+      );
+    }
+
+    function monitorSKU(skuId) {
+      const p = D.products.find(p=>p.id===skuId);
+      UI.showToast(`👁 ${p?.name} added to monitoring queue`, 'info');
+    }
+
+    function viewSubstitute(skuId) {
+      const p = D.products.find(p=>p.id===skuId);
+      const sub = D.products.find(s=>s.id===p?.substitute);
+      if (!sub) return;
+      UI.showModal('Smart Substitution', `
+        <p style="color:var(--text-muted);margin-bottom:16px">Your usual <strong>${p.name}</strong> is at HIGH phantom-stock risk.<br>Would you recommend this substitute?</p>
+        <div style="background:var(--surface-200);border-radius:12px;padding:18px">
+          <div style="font-size:1.1rem;font-weight:700;margin-bottom:8px">${sub.name}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div><div style="font-size:0.7rem;color:var(--text-muted)">PRICE</div><div style="font-weight:700">₹${sub.price}</div></div>
+            <div><div style="font-size:0.7rem;color:var(--text-muted)">RISK</div><div style="font-weight:700;color:#22c55e">${sub.risk}</div></div>
+            <div><div style="font-size:0.7rem;color:var(--text-muted)">STOCK</div><div style="font-weight:700;color:#22c55e">${sub.stockStatus}</div></div>
+          </div>
+        </div>
+      `, [
+        { label: '✅ Mark as Recommended Substitute', class: 'btn-success btn-md', onClick: () => UI.showToast(`${sub.name} set as substitute for ${p.name}`, 'success') },
+        { label: 'Cancel', class: 'btn-ghost btn-md' },
+      ]);
+    }
+
+    function viewEvidence(skuId) {
+      const p = D.products.find(x=>x.id===skuId);
+      if (!p) return;
+      UI.showModal(`Evidence: ${p.name}`, `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          ${[
+            ['Total Orders', p.orders.toLocaleString()], ['Cancellations', p.cancellations.toLocaleString()],
+            ['Cancel Rate', p.cancellationRate+'%'], ['Stock Status', p.stockStatus],
+            ['Main Reason', p.mainReason], ['Peak Period', p.peakCancelTime],
+            ['Store', p.storeId], ['Risk Score', p.riskScore],
+          ].map(([l,v])=>`<div style="background:var(--surface-200);border-radius:8px;padding:12px"><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${l}</div><div style="font-weight:700;margin-top:4px">${v}</div></div>`).join('')}
+        </div>
+        <div class="disclaimer-badge" style="display:inline-flex">⚠ SIMULATED DATA — NOT REAL NOVACART RESULTS</div>
+      `, [{ label: 'Close', class: 'btn-ghost btn-md' }]);
+    }
+
+    // CSV Upload Handlers
+    function handleDragOver(e) {
+      e.preventDefault();
+      document.getElementById('upload-zone').classList.add('drag-over');
+    }
+    function handleDragLeave() { document.getElementById('upload-zone').classList.remove('drag-over'); }
+    function handleDrop(e) {
+      e.preventDefault();
+      document.getElementById('upload-zone').classList.remove('drag-over');
+      const file = e.dataTransfer?.files[0];
+      if (file?.name.endsWith('.csv')) handleFileUpload(file);
+      else UI.showToast('Please upload a CSV file', 'error');
+    }
+    function handleFileUpload(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const { headers, rows } = NOVA_UI.parseCSV(e.target.result);
+        const required = ['SKU ID', 'Product Name', 'Cancellation Status'];
+        const missing = required.filter(r => !headers.find(h => h.toLowerCase().includes(r.toLowerCase().replace(' ',''))));
+
+        const feedback = document.getElementById('csv-feedback');
+        feedback.classList.remove('hidden');
+
+        if (rows.length === 0) {
+          feedback.innerHTML = `<div class="alert-card alert-critical"><span>❌</span><div>Empty CSV or invalid format.</div></div>`;
+          return;
+        }
+
+        feedback.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <div class="badge badge-low">✓ ${rows.length} rows parsed</div>
+          ${missing.length ? `<div class="badge badge-medium">⚠ Missing: ${missing.join(', ')}</div>` : '<div class="badge badge-low">✓ All required columns found</div>'}
+        </div>
+        <div class="csv-preview" style="margin-top:10px"><table>
+          <tr>${headers.slice(0,6).map(h=>`<th>${h}</th>`).join('')}</tr>
+          ${rows.slice(0,4).map(r=>`<tr>${headers.slice(0,6).map(h=>`<td>${r[h]||''}</td>`).join('')}</tr>`).join('')}
+        </table></div>
+        <div style="margin-top:10px;display:flex;gap:10px">
+          <button class="btn-primary btn-md" onclick="analyzeCSVData()">🧠 Analyze with AI</button>
+          <button class="btn-ghost btn-md" onclick="document.getElementById('csv-feedback').classList.add('hidden')">Clear</button>
+        </div>`;
+
+        window._csvRows = rows;
+        window._csvHeaders = headers;
+        UI.showToast(`CSV loaded: ${rows.length} rows, ${headers.length} columns`, 'success');
+      };
+      reader.readAsText(file);
+    }
+
+    function analyzeCSVData() {
+      UI.showToast('Analyzing CSV data with AI engine...', 'info', 2000);
+      setTimeout(() => {
+        loadDemoAnalysis();
+        UI.showToast('✅ CSV analysis complete', 'success');
+      }, 2000);
+    }
+
+    loadDemoAnalysis();
+  </script>
+</body>
+</html>

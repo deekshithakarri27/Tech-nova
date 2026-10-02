@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Track Order #NC-2048 — NovaCart AI</title>
+  <meta name="description" content="Live Order Tracking with AI-Powered Honest ETA" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/landing.css" />
+  <style>
+    .tracking-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    .tracking-card { background: var(--surface-100); border: 1px solid var(--surface-border); border-radius: var(--radius-xl); padding: 28px; margin-bottom: 24px; box-shadow: var(--shadow-lg); }
+    .status-badge-lg { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 100px; font-weight: 700; font-size: 0.9rem; }
+    .eta-box { background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(139,92,246,0.1)); border: 1px solid rgba(59,130,246,0.25); border-radius: var(--radius-xl); padding: 24px; text-align: center; margin: 24px 0; }
+    .eta-big { font-family: var(--font-display); font-size: 3rem; font-weight: 900; background: linear-gradient(135deg, var(--nova-blue-light), var(--nova-purple-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .eta-diff { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; }
+    .progress-stepper { display: flex; justify-content: space-between; position: relative; margin: 36px 0; }
+    .progress-stepper::before { content: ''; position: absolute; top: 18px; left: 10%; right: 10%; height: 3px; background: var(--bg-600); z-index: 1; }
+    .progress-step { position: relative; z-index: 2; text-align: center; flex: 1; }
+    .step-icon { width: 38px; height: 38px; border-radius: 50%; background: var(--bg-600); border: 2px solid var(--surface-border); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 0.9rem; transition: all 0.3s; }
+    .step-active .step-icon { background: var(--nova-blue); border-color: var(--nova-blue-light); color: white; box-shadow: 0 0 15px var(--nova-blue-glow); }
+    .step-completed .step-icon { background: var(--nova-green); border-color: var(--nova-green); color: white; }
+    .step-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+    .step-active .step-label { color: var(--text-primary); font-weight: 700; }
+    .map-preview { height: 260px; background: #0c1222; border-radius: var(--radius-lg); border: 1px solid var(--surface-border); position: relative; overflow: hidden; margin-top: 20px; }
+    .ai-reason-card { background: var(--surface-200); border-left: 4px solid var(--nova-purple); border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: 16px; margin-top: 20px; }
+    .item-list-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--surface-border); }
+  </style>
+</head>
+<body style="background: var(--bg-900); color: var(--text-primary);">
+
+  <!-- NAV -->
+  <nav class="landing-nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Nova<span class="logo-accent">Cart</span> <span class="logo-ai">AI</span></span>
+      </a>
+      <div class="nav-links">
+        <a href="../index.html#features">Features</a>
+        <a href="../index.html#how-it-works">How It Works</a>
+        <a href="tracking.html" class="active" style="color:var(--nova-blue-light)">Track Order</a>
+        <a href="reorder.html">Smart Reorder</a>
+      </div>
+      <a href="dashboard.html" class="btn-primary btn-sm">Launch Control Center →</a>
+    </div>
+  </nav>
+
+  <div class="tracking-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <div>
+        <a href="../index.html" style="color:var(--text-muted); font-size:0.85rem;">← Back to Home</a>
+        <h1 style="font-size:1.8rem; font-weight:800; margin-top:6px;">Order #NC-2048</h1>
+      </div>
+      <div class="status-badge-lg badge-blue">
+        <span class="pulse-dot"></span> ON THE WAY
+      </div>
+    </div>
+
+    <div class="tracking-card">
+      <div class="eta-box">
+        <div style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--nova-blue-light); font-weight:700;">Honest ETA by NovaCart AI</div>
+        <div class="eta-big" id="eta-timer">14 mins</div>
+        <div class="eta-diff">
+          Standard estimate: <strike style="opacity:0.6">10 mins</strike> &bull; Adjusted by AI (+4 mins for rider multi-stop &amp; traffic)
+        </div>
+      </div>
+
+      <!-- PROGRESS STEPPER -->
+      <div class="progress-stepper">
+        <div class="progress-step step-completed">
+          <div class="step-icon">✓</div>
+          <div class="step-label">Order Placed<br/><span style="font-size:0.7rem; opacity:0.7">10:14 AM</span></div>
+        </div>
+        <div class="progress-step step-completed">
+          <div class="step-icon">✓</div>
+          <div class="step-label">Store Packed<br/><span style="font-size:0.7rem; opacity:0.7">10:19 AM</span></div>
+        </div>
+        <div class="progress-step step-active">
+          <div class="step-icon">🚴</div>
+          <div class="step-label">On The Way<br/><span style="font-size:0.7rem; opacity:0.7">Rider: Arjun S.</span></div>
+        </div>
+        <div class="progress-step">
+          <div class="step-icon">🏠</div>
+          <div class="step-label">Delivered<br/><span style="font-size:0.7rem; opacity:0.7">Est 10:33 AM</span></div>
+        </div>
+      </div>
+
+      <!-- SIMULATED MAP -->
+      <div class="map-preview">
+        <svg width="100%" height="100%" style="position:absolute; inset:0;">
+          <defs>
+            <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+              <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+          <!-- Route Line -->
+          <path d="M 120 180 Q 300 80 650 160" fill="none" stroke="var(--nova-blue)" stroke-width="4" stroke-dasharray="8 4"/>
+          <!-- Store Marker -->
+          <circle cx="120" cy="180" r="14" fill="#3b82f6" opacity="0.3"/>
+          <circle cx="120" cy="180" r="8" fill="#3b82f6"/>
+          <text x="120" y="210" fill="#94a3b8" font-size="11" text-anchor="middle">Indiranagar Store #102</text>
+
+          <!-- Customer Marker -->
+          <circle cx="650" cy="160" r="14" fill="#10b981" opacity="0.3"/>
+          <circle cx="650" cy="160" r="8" fill="#10b981"/>
+          <text x="650" y="190" fill="#94a3b8" font-size="11" text-anchor="middle">Delivery Location</text>
+
+          <!-- Rider Marker (Animated) -->
+          <g transform="translate(380, 115)">
+            <circle cx="0" cy="0" r="16" fill="#8b5cf6" opacity="0.4">
+              <animate attributeName="r" values="14;22;14" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="0" cy="0" r="10" fill="#8b5cf6"/>
+            <text x="0" y="4" fill="#ffffff" font-size="10" text-anchor="middle">🚴</text>
+            <text x="0" y="-16" fill="#c084fc" font-size="11" font-weight="bold" text-anchor="middle">Arjun S. (En Route)</text>
+          </g>
+        </svg>
+        <div style="position:absolute; bottom:12px; left:12px; background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); padding:8px 14px; border-radius:8px; border:1px solid var(--surface-border); font-size:0.75rem; color:var(--text-muted);">
+          📍 Active GPS Tracking: <strong>2.1 km away</strong>
+        </div>
+      </div>
+
+      <!-- AI EXPLANATION -->
+      <div class="ai-reason-card">
+        <div style="font-size:0.85rem; font-weight:700; color:var(--nova-purple-light); margin-bottom:4px;">
+          🧠 Why NovaCart Honest ETA is 14 minutes:
+        </div>
+        <p style="font-size:0.82rem; color:var(--text-muted); margin:0;">
+          Our AI model calculated your ETA considering rider Arjun S.'s current speed, 1 nearby drop-off en route, and real-time traffic along 100ft Road. We provide precise times so you're never left guessing.
+        </p>
+      </div>
+    </div>
+
+    <!-- ORDER SUMMARY CARD -->
+    <div class="tracking-card">
+      <h3 style="font-size:1.1rem; margin-bottom:16px;">Order Summary</h3>
+      <div class="item-list-row">
+        <span>Amul Fresh Milk 500ml × 2</span>
+        <strong>₹60</strong>
+      </div>
+      <div class="item-list-row">
+        <span>Whole Wheat Bread 400g × 1</span>
+        <strong>₹45</strong>
+      </div>
+      <div class="item-list-row">
+        <span>Farm Fresh Eggs (6 pcs) × 1</span>
+        <strong>₹48</strong>
+      </div>
+      <div class="item-list-row" style="border-bottom:none; margin-top:8px; font-size:1.05rem;">
+        <strong>Total Amount</strong>
+        <strong style="color:var(--nova-green);">₹153</strong>
+      </div>
+    </div>
+
+    <!-- SMART REORDER CALLOUT -->
+    <div class="tracking-card" style="background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(59,130,246,0.08)); border-color: rgba(16,185,129,0.3);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+        <div>
+          <h4 style="margin:0; font-size:1rem; color:var(--nova-green);">🛒 Schedule your next reorder</h4>
+          <p style="margin:4px 0 0 0; font-size:0.82rem; color:var(--text-muted);">You typically run out of milk &amp; bread in 3 days. Set an automatic reminder!</p>
+        </div>
+        <a href="reorder.html" class="btn-success btn-sm">Setup Smart Reorder →</a>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

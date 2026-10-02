@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Intelligence — NovaCart AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .cust-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 16px; }
+    .cust-card { background: var(--surface-100); border: 1px solid var(--surface-border); border-radius: var(--radius-xl); padding: 20px; transition: all 0.2s; }
+    .cust-card:hover { border-color: var(--surface-border-hover); transform: translateY(-2px); }
+    .cust-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .cust-name { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+    .cust-phone { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+    .prob-badge { font-family: var(--font-display); font-size: 0.85rem; font-weight: 800; padding: 4px 10px; border-radius: 100px; }
+    .prob-high { background: rgba(16,185,129,0.15); color: var(--nova-green-light); border: 1px solid rgba(16,185,129,0.3); }
+    .prob-med { background: rgba(245,158,11,0.15); color: var(--nova-yellow); border: 1px solid rgba(245,158,11,0.3); }
+    .item-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+    .item-tag { background: var(--surface-200); border: 1px solid var(--surface-border); border-radius: 6px; padding: 3px 8px; font-size: 0.72rem; color: var(--text-secondary); }
+  </style>
+</head>
+<body class="admin-layout">
+
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-content" id="main-content">
+    <div class="topbar" id="topbar"></div>
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-inner">
+          <div>
+            <div class="page-title">👥 Customer Growth Intelligence</div>
+            <div class="page-subtitle">Track individual reorder intervals, churn risk scores, and automated rescue campaign readiness.</div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-success btn-md" onclick="notifyAllDue()">🚀 Launch Campaign for 127 Customers</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI ROW -->
+      <div class="kpi-grid mb-24">
+        <div class="kpi-card">
+          <div class="kpi-icon icon-green">🔄</div>
+          <div class="kpi-label">Due for Reorder</div>
+          <div class="kpi-value" id="due-count">127</div>
+          <div class="kpi-sub green">High purchase probability</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon icon-purple">💰</div>
+          <div class="kpi-label">Potential Revenue</div>
+          <div class="kpi-value">₹23,622</div>
+          <div class="kpi-sub purple">Average basket ₹186</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon icon-blue">📊</div>
+          <div class="kpi-label">Avg Probability</div>
+          <div class="kpi-value">79.4%</div>
+          <div class="kpi-sub blue">AI Confidence interval</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon icon-yellow">⚡</div>
+          <div class="kpi-label">Campaigns Sent</div>
+          <div class="kpi-value" id="sent-count">18</div>
+          <div class="kpi-sub yellow">38% conversion rate</div>
+        </div>
+      </div>
+
+      <!-- FILTERS PANEL -->
+      <div class="section-panel mb-20">
+        <div class="section-panel-header">
+          <div class="section-panel-title"><span>🔍</span> Customer Filter</div>
+        </div>
+        <div class="section-panel-body">
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+            <div>
+              <label class="form-label">Reorder Status</label>
+              <select id="filter-status" class="select-input" style="width:100%" onchange="renderCustomers()">
+                <option value="">All Statuses</option>
+                <option value="DUE_NOW">🔴 Due Now (≥ 0 days)</option>
+                <option value="DUE_SOON">🟡 Due Soon (1-2 days)</option>
+                <option value="UPCOMING">🟢 Upcoming</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Category</label>
+              <select id="filter-cat" class="select-input" style="width:100%" onchange="renderCustomers()">
+                <option value="">All Categories</option>
+                <option value="Breakfast Essentials">Breakfast Essentials</option>
+                <option value="Kitchen Staples">Kitchen Staples</option>
+                <option value="Dairy Bundle">Dairy Bundle</option>
+                <option value="Vegetables">Vegetables</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Search Customer</label>
+              <input type="text" id="filter-search" class="search-input" placeholder="Search by name or phone..." oninput="renderCustomers()" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CUSTOMER CARDS GRID -->
+      <div class="cust-grid" id="cust-container">
+        <!-- Rendered by JS -->
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/ai-engine.js"></script>
+  <script src="../js/demo.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      NOVA_SHELL.init('Customers', 'Customer reorder frequency, propensity models & rescue status');
+      renderCustomers();
+    });
+
+    function renderCustomers() {
+      const container = document.getElementById('cust-container');
+      const status = document.getElementById('filter-status').value;
+      const cat = document.getElementById('filter-cat').value;
+      const search = document.getElementById('filter-search').value.toLowerCase();
+
+      let list = window.NOVACART_DATA.customers;
+
+      if (status) list = list.filter(c => c.status === status);
+      if (cat) list = list.filter(c => c.category === cat);
+      if (search) list = list.filter(c => c.name.toLowerCase().includes(search) || c.phone.includes(search));
+
+      container.innerHTML = list.slice(0, 30).map(c => `
+        <div class="cust-card">
+          <div class="cust-header">
+            <div>
+              <div class="cust-name">${c.name}</div>
+              <div class="cust-phone">${c.phone}</div>
+            </div>
+            <span class="prob-badge ${c.reorderProbability >= 75 ? 'prob-high' : 'prob-med'}">
+              ${c.reorderProbability}% Prob
+            </span>
+          </div>
+
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px;">
+            Category: <strong style="color:var(--text-primary)">${c.category}</strong> &bull; Freq: every ${c.frequency} days
+          </div>
+
+          <div class="item-tags">
+            ${c.items.map(i => `<span class="item-tag">${i}</span>`).join('')}
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:0.75rem; border-top:1px solid var(--surface-border); padding-top:10px;">
+            <span style="color:${c.nextDueDays <= 0 ? 'var(--nova-red)' : 'var(--text-muted)'}">
+              ${c.nextDueDays <= 0 ? '⚠️ Overdue by ' + Math.abs(c.nextDueDays) + 'd' : 'Due in ' + c.nextDueDays + ' days'}
+            </span>
+            <button class="${c.notified ? 'btn-ghost' : 'btn-primary'} btn-sm" onclick="sendReorder('${c.id}')" ${c.notified ? 'disabled' : ''}>
+              ${c.notified ? '✓ Notification Sent' : '📱 Send 1-Click Reorder'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function sendReorder(id) {
+      const cust = window.NOVACART_DATA.customers.find(c => c.id === id);
+      if (cust) {
+        cust.notified = true;
+        NOVA_UI.showToast(`Personalized WhatsApp/Push notification sent to ${cust.name}`, 'success');
+        renderCustomers();
+      }
+    }
+
+    function notifyAllDue() {
+      const due = window.NOVACART_DATA.customers.filter(c => c.status === 'DUE_NOW');
+      due.forEach(c => c.notified = true);
+      document.getElementById('sent-count').textContent = parseInt(document.getElementById('sent-count').textContent) + due.length;
+      NOVA_UI.showToast(`Batch Smart Reorder campaign sent to ${due.length} due customers!`, 'success');
+      renderCustomers();
+    }
+  </script>
+</body>
+</html>

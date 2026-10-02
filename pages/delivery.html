@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delivery Intelligence — NovaCart AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <style>
+    .delivery-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+    .map-container { background: var(--bg-800); border: 1px solid var(--surface-border); border-radius: var(--radius-xl); height: 480px; position: relative; overflow: hidden; }
+    .map-canvas { width: 100%; height: 100%; }
+    .map-label { position: absolute; top: 12px; left: 12px; }
+    .map-legend { position: absolute; bottom: 12px; right: 12px; background: rgba(13,20,32,0.85); backdrop-filter: blur(10px); border: 1px solid var(--surface-border); border-radius: 10px; padding: 10px 14px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .rider-card { background: var(--surface-100); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; }
+    .rider-card:hover { border-color: var(--nova-blue); transform: translateX(2px); }
+    .rider-card.selected { border-color: var(--nova-blue); background: var(--nova-blue-glow); }
+    .rider-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .rider-name { font-weight: 700; font-size: 0.9rem; }
+    .rider-id { font-size: 0.72rem; color: var(--text-muted); font-family: monospace; }
+    .eta-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+    .eta-box { text-align: center; border-radius: 8px; padding: 10px; }
+    .eta-promised { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); }
+    .eta-honest { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); }
+    .eta-val { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; }
+    .eta-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .customer-msg { background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.08)); border: 1px solid rgba(59,130,246,0.2); border-radius: 12px; padding: 16px; margin-top: 12px; }
+    .msg-header { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--nova-blue-light); margin-bottom: 8px; }
+    .msg-body { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; }
+    .compensation-notice { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 10px; padding: 12px; margin-top: 10px; font-size: 0.82rem; color: #fbbf24; }
+    .breadcrumb-row { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; margin-bottom: 8px; }
+    .breakdown-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; padding: 6px 0; border-bottom: 1px solid var(--surface-border); }
+    .breakdown-row:last-child { border-bottom: none; }
+    @media (max-width: 900px) { .delivery-grid { grid-template-columns: 1fr; } .map-container { height: 320px; } }
+  </style>
+</head>
+<body class="admin-layout">
+
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main-content" id="main-content">
+    <div class="topbar" id="topbar"></div>
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-inner">
+          <div>
+            <div class="page-title">🗺️ Delivery Intelligence</div>
+            <div class="page-subtitle">Honest ETA calculation, live rider tracking, and AI-powered delay risk scoring.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="disclaimer-badge">⚠ DEMO GPS DATA</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="grid-4 mb-20">
+        <div class="kpi-card" style="--accent-color:#3b82f6">
+          <div class="kpi-label">🚴 Active Riders</div>
+          <div class="kpi-value" style="color:#3b82f6" id="kpi-active-riders">4</div>
+          <div class="kpi-change kpi-up">▲ 2 available</div>
+        </div>
+        <div class="kpi-card" style="--accent-color:#f97316">
+          <div class="kpi-label">⏱ Orders at Delay Risk</div>
+          <div class="kpi-value" style="color:#f97316">53</div>
+          <div class="kpi-change kpi-down">▼ >60% delay probability</div>
+        </div>
+        <div class="kpi-card" style="--accent-color:#eab308">
+          <div class="kpi-label">📊 Avg Honest ETA Gap</div>
+          <div class="kpi-value" style="color:#eab308">+4.2 min</div>
+          <div class="kpi-change kpi-down">▼ vs displayed ETA</div>
+        </div>
+        <div class="kpi-card" style="--accent-color:#22c55e">
+          <div class="kpi-label">✅ On-Time Rate</div>
+          <div class="kpi-value" style="color:#22c55e">78.2%</div>
+          <div class="kpi-change kpi-neutral">— Today</div>
+        </div>
+      </div>
+
+      <div class="delivery-grid">
+        <!-- MAP -->
+        <div>
+          <div class="map-container">
+            <canvas id="map-canvas" class="map-canvas"></canvas>
+            <div class="map-label">
+              <span class="badge badge-info">🔴 DEMO GPS DATA — Simulated Bengaluru Map</span>
+            </div>
+            <div class="map-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div>Active Rider</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>Busy Rider</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>Returning</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Customer</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#eab308"></div>Store</div>
+            </div>
+          </div>
+
+          <!-- HONEST ETA CALCULATOR -->
+          <div class="section-panel mt-20">
+            <div class="section-panel-header">
+              <div class="section-panel-title"><span>⏱</span> Honest ETA Calculator</div>
+            </div>
+            <div class="section-panel-body">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+                <div>
+                  <label class="form-label">Select Rider</label>
+                  <select id="calc-rider" class="select-input" style="width:100%" onchange="calculateHonestETA()">
+                    <!-- filled by JS -->
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label">Active Orders (override)</label>
+                  <input type="number" id="calc-orders" class="text-input" value="3" min="1" max="8" onchange="calculateHonestETA()" />
+                </div>
+                <div>
+                  <label class="form-label">Traffic Condition</label>
+                  <select id="calc-traffic" class="select-input" style="width:100%" onchange="calculateHonestETA()">
+                    <option value="LOW">Light</option>
+                    <option value="MEDIUM" selected>Moderate</option>
+                    <option value="HIGH">Heavy</option>
+                  </select>
+                </div>
+              </div>
+              <div id="eta-result"></div>
+            </div>
+          </div>
+
+          <!-- SETTINGS -->
+          <div class="section-panel mt-20">
+            <div class="section-panel-header">
+              <div class="section-panel-title"><span>⚙️</span> Delay Recovery Settings</div>
+            </div>
+            <div class="section-panel-body">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <div>
+                  <label class="form-label">Delay Threshold (minutes)</label>
+                  <input type="range" id="delay-threshold" class="range-slider" min="3" max="20" value="5" oninput="document.getElementById('threshold-val').textContent=this.value" />
+                  <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-top:4px"><span>3 min</span><span id="threshold-val">5</span> min<span>20 min</span></div>
+                </div>
+                <div>
+                  <label class="form-label">Compensation Amount (₹)</label>
+                  <input type="range" id="compensation-amt" class="range-slider" min="10" max="100" value="30" step="10" oninput="document.getElementById('comp-val').textContent=this.value" />
+                  <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-top:4px"><span>₹10</span><span>₹<span id="comp-val">30</span></span><span>₹100</span></div>
+                </div>
+              </div>
+              <div style="margin-top:16px;font-size:0.78rem;color:var(--text-muted);background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:10px">
+                ⚠ In this prototype, notifications are simulated. In production, these would trigger real WhatsApp/Push notifications.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIDER PANEL -->
+        <div>
+          <div class="section-panel" style="height:fit-content">
+            <div class="section-panel-header">
+              <div class="section-panel-title"><span>🚴</span> Active Riders</div>
+              <span class="badge badge-low">Live (simulated)</span>
+            </div>
+            <div class="section-panel-body" style="padding:12px">
+              <div id="rider-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/ai-engine.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/shell.js"></script>
+  <script src="../js/demo.js"></script>
+  <script>
+    NOVA_SHELL.init('Delivery Intelligence', 'Honest ETA · Rider Tracking · Delay Risk Scoring');
+    const D = window.NOVACART_DATA;
+    const AI = window.NOVACART_AI;
+    const UI = window.NOVA_UI;
+
+    let selectedRider = D.riders[0];
+
+    // --- SIMULATED MAP ---
+    function drawMap() {
+      const canvas = document.getElementById('map-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.offsetWidth || 600;
+      canvas.height = canvas.offsetHeight || 480;
+      const W = canvas.width, H = canvas.height;
+
+      // Background
+      ctx.fillStyle = '#0d1420';
+      ctx.fillRect(0, 0, W, H);
+
+      // Grid (streets)
+      ctx.strokeStyle = 'rgba(59,130,246,0.06)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < W; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke(); }
+      for (let i = 0; i < H; i += 40) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke(); }
+
+      // Roads
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 6;
+      [[0, H*0.35, W, H*0.35], [0, H*0.65, W, H*0.65], [W*0.3, 0, W*0.3, H], [W*0.7, 0, W*0.7, H]].forEach(([x1,y1,x2,y2]) => {
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      });
+
+      // Calculate bounds for coordinate mapping
+      const lats = D.riders.map(r=>r.lat).concat(D.stores.map(s=>s.lat));
+      const lngs = D.riders.map(r=>r.lng).concat(D.stores.map(s=>s.lng));
+      const minLat = Math.min(...lats) - 0.01, maxLat = Math.max(...lats) + 0.01;
+      const minLng = Math.min(...lngs) - 0.01, maxLng = Math.max(...lngs) + 0.01;
+      const toX = lng => ((lng - minLng) / (maxLng - minLng)) * (W - 60) + 30;
+      const toY = lat => (1 - (lat - minLat) / (maxLat - minLat)) * (H - 60) + 30;
+
+      // Stores
+      D.stores.forEach(s => {
+        const x = toX(s.lng), y = toY(s.lat);
+        ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI*2);
+        ctx.fillStyle = s.status==='CRITICAL'?'#ef444444':s.status==='WARNING'?'#f9731644':'#eab30844';
+        ctx.fill();
+        ctx.strokeStyle = s.status==='CRITICAL'?'#ef4444':s.status==='WARNING'?'#f97316':'#eab308';
+        ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = 'rgba(241,245,249,0.7)';
+        ctx.font = '10px Inter'; ctx.textAlign = 'center';
+        ctx.fillText(s.id, x, y-12);
+      });
+
+      // Riders
+      D.riders.forEach(r => {
+        const x = toX(r.lng), y = toY(r.lat);
+        const color = r.status==='ACTIVE'?'#3b82f6':r.status==='BUSY'?'#f97316':'#22c55e';
+        const isSelected = selectedRider?.id === r.id;
+
+        if (isSelected) {
+          ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI*2);
+          ctx.fillStyle = color + '22'; ctx.fill();
+        }
+
+        ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI*2);
+        ctx.fillStyle = color; ctx.fill();
+        ctx.strokeStyle = isSelected ? '#fff' : '#0d1420';
+        ctx.lineWidth = isSelected ? 2.5 : 2; ctx.stroke();
+
+        // Rider ID label
+        ctx.fillStyle = '#f1f5f9';
+        ctx.font = `bold 9px Inter`;
+        ctx.textAlign = 'center';
+        ctx.fillText(r.id, x, y + 3);
+        ctx.fillStyle = 'rgba(148,163,184,0.8)';
+        ctx.font = '9px Inter';
+        ctx.fillText(r.name.split(' ')[0], x, y + 16);
+
+        // Route line to nearest store
+        if (r.status !== 'RETURNING') {
+          const store = D.stores.find(s=>s.id===r.storeId);
+          if (store) {
+            const sx = toX(store.lng), sy = toY(store.lat);
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(sx, sy);
+            ctx.strokeStyle = color + '44'; ctx.lineWidth = 1.5;
+            ctx.setLineDash([5,5]); ctx.stroke(); ctx.setLineDash([]);
+          }
+        }
+      });
+
+      // Legend corner label
+      ctx.fillStyle = 'rgba(100,116,139,0.5)';
+      ctx.font = '10px Inter'; ctx.textAlign = 'left';
+      ctx.fillText('BENGALURU — DEMO COORDINATES', 10, H - 8);
+    }
+
+    // --- RIDER CARDS ---
+    function renderRiders() {
+      const statusColors = { ACTIVE: '#22c55e', BUSY: '#f97316', RETURNING: '#3b82f6' };
+      document.getElementById('rider-list').innerHTML = D.riders.map(r => {
+        const eta = AI.calcHonestETA(r);
+        const risk = AI.scoreDeliveryRisk({ riskLevel: r.delayRisk }, r);
+        const isSelected = selectedRider?.id === r.id;
+        return `<div class="rider-card ${isSelected?'selected':''}" onclick="selectRider('${r.id}')">
+          <div class="rider-header">
+            <div>
+              <div class="rider-name">${r.name}</div>
+              <div class="rider-id">${r.id} · ${r.storeId}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+              <span class="badge" style="background:${statusColors[r.status]}22;color:${statusColors[r.status]};border:1px solid ${statusColors[r.status]}44">${r.status}</span>
+              <span class="badge ${UI.getRiskBadgeClass(r.delayRisk==='HIGH'?'HIGH':r.delayRisk==='MEDIUM'?'MEDIUM':'LOW')}">${r.delayRisk} RISK</span>
+            </div>
+          </div>
+
+          <div class="eta-compare">
+            <div class="eta-box eta-promised">
+              <div class="eta-val" style="color:#ef4444">${r.currentETA}<span style="font-size:0.8rem">m</span></div>
+              <div class="eta-label">Displayed ETA</div>
+            </div>
+            <div class="eta-box eta-honest">
+              <div class="eta-val" style="color:#22c55e">${r.honestETA}<span style="font-size:0.8rem">m</span></div>
+              <div class="eta-label">Honest AI ETA</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">
+            <span>📦 ${r.activeOrders} orders</span>
+            <span>📍 ${r.distanceKm}km</span>
+            <span>✓ ${r.completedToday} today</span>
+          </div>
+
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px;font-style:italic">"${r.reason}"</div>
+
+          <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem">
+            <span>Confidence:</span>
+            <div class="risk-bar-container" style="flex:1"><div class="risk-bar-fill risk-low" style="width:${r.etaConfidence}%"></div></div>
+            <span style="color:#22c55e">${r.etaConfidence}%</span>
+          </div>
+
+          ${r.delayRisk==='HIGH' ? `<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn-danger btn-sm" onclick="event.stopPropagation();rescueOrder('${r.id}')">🚨 Apply Rescue</button>
+            <button class="btn-ghost btn-sm" onclick="event.stopPropagation();sendCustomerMsg('${r.id}')">💬 Notify Customer</button>
+          </div>` : ''}
+        </div>`;
+      }).join('');
+
+      // Populate rider select
+      const sel = document.getElementById('calc-rider');
+      if (sel) {
+        sel.innerHTML = D.riders.map(r=>`<option value="${r.id}">${r.id} — ${r.name}</option>`).join('');
+        if (selectedRider) sel.value = selectedRider.id;
+      }
+    }
+
+    function selectRider(riderId) {
+      selectedRider = D.riders.find(r=>r.id===riderId);
+      renderRiders();
+      calculateHonestETA();
+      drawMap();
+    }
+
+    function rescueOrder(riderId) {
+      const rider = D.riders.find(r=>r.id===riderId);
+      UI.confirm(`Apply rescue action for Rider ${rider?.name}? This will reassign pending orders and update ETAs.`, () => {
+        rider.delayRisk = 'LOW';
+        rider.honestETA = Math.max(rider.currentETA, rider.honestETA - 4);
+        renderRiders();
+        UI.showToast(`✅ Rescue applied to Rider ${rider.id} — delay risk reduced`, 'success');
+      });
+    }
+
+    function sendCustomerMsg(riderId) {
+      const rider = D.riders.find(r=>r.id===riderId);
+      const rec = AI.getDeliveryRecommendation(rider, {score:80});
+      UI.showModal('Customer Notification (Simulated)', `
+        <div class="customer-msg">
+          <div class="msg-header">📱 Customer Message Preview</div>
+          <div class="msg-body">${rec.customerMsg}</div>
+        </div>
+        ${rec.compensation ? `<div class="compensation-notice" style="margin-top:12px">🎁 ${rec.compensation}</div>` : ''}
+        <div style="margin-top:14px;font-size:0.75rem;color:var(--text-muted);background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:10px">
+          ⚠ In this prototype, this notification is NOT actually sent. In production, this would trigger a real WhatsApp or push notification.
+        </div>
+      `, [
+        { label: '📤 Send (Simulated)', class: 'btn-primary btn-md', onClick: () => UI.showToast('Notification sent (simulated)', 'success') },
+        { label: 'Cancel', class: 'btn-ghost btn-md' },
+      ]);
+    }
+
+    // --- HONEST ETA CALCULATOR ---
+    function calculateHonestETA() {
+      const riderId = document.getElementById('calc-rider')?.value;
+      const rider = D.riders.find(r=>r.id===riderId);
+      if (!rider) return;
+
+      const overrideOrders = parseInt(document.getElementById('calc-orders')?.value) || rider.activeOrders;
+      const traffic = document.getElementById('calc-traffic')?.value || rider.delayRisk;
+      const modRider = { ...rider, activeOrders: overrideOrders, delayRisk: traffic };
+      const eta = AI.calcHonestETA(modRider);
+      const rec = AI.getDeliveryRecommendation(modRider, {score: modRider.delayRisk === 'HIGH' ? 80 : modRider.delayRisk === 'MEDIUM' ? 50 : 20});
+
+      document.getElementById('eta-result').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="eta-box eta-promised">
+            <div class="eta-val" style="color:#ef4444">${rider.currentETA}<span style="font-size:0.8rem">m</span></div>
+            <div class="eta-label">Currently Displayed</div>
+          </div>
+          <div class="eta-box eta-honest">
+            <div class="eta-val" style="color:#22c55e">${eta.etaMinutes}<span style="font-size:0.8rem">m</span></div>
+            <div class="eta-label">AI Honest ETA</div>
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">ETA Breakdown</div>
+          ${[['Base travel time', eta.breakdown.base+'m'],['Stop buffer (×'+overrideOrders+')', eta.breakdown.stopBuffer+'m'],['Traffic buffer ('+traffic+')', eta.breakdown.trafficBuffer+'m'],['Store prep', eta.breakdown.prepBuffer+'m']].map(([l,v])=>`<div class="breakdown-row"><span style="color:var(--text-muted)">${l}</span><span style="font-weight:600">${v}</span></div>`).join('')}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="font-size:0.8rem;color:var(--text-muted)">Confidence:</span>
+          <div class="risk-bar-container" style="flex:1"><div class="risk-bar-fill risk-low" style="width:${eta.confidence}%"></div></div>
+          <span style="color:#22c55e;font-size:0.8rem;font-weight:700">${eta.confidence}%</span>
+        </div>
+        <div class="customer-msg">
+          <div class="msg-header">💬 Auto-Generated Customer Message</div>
+          <div class="msg-body">${rec.customerMsg}</div>
+        </div>
+        ${rec.compensation ? `<div class="compensation-notice">${rec.compensation}</div>` : ''}
+      `;
+    }
+
+    // Init
+    renderRiders();
+    calculateHonestETA();
+    setTimeout(drawMap, 100);
+
+    // Refresh map on resize
+    window.addEventListener('resize', () => setTimeout(drawMap, 100));
+
+    // Simulated live updates
+    setInterval(() => {
+      D.riders.forEach(r => {
+        r.distanceKm = Math.max(0.3, r.distanceKm + (Math.random() - 0.5) * 0.2);
+        r.lat += (Math.random() - 0.5) * 0.002;
+        r.lng += (Math.random() - 0.5) * 0.002;
+      });
+      drawMap();
+    }, 3000);
+  </script>
+</body>
+</html>
